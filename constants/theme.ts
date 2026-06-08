@@ -5,27 +5,83 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Brand palette (shared) — restored previous softer greens
+const Brand = {
+  green: '#82ad51',
+  paleGreen: '#bed4a4',
+  deepOlive: '#2d3c1c',
+  olive: '#4c542c',
+  warmGray: '#848274',
+  lightStone: '#b1afa2',
+};
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: '#11181C', // dark text on light bg
+    background: '#F7F9F4', // softened app background (not pure white)
+    backgroundSoft: '#F4F6F0',
+    tint: Brand.green,
+    primary: Brand.green,
+    secondary: Brand.olive,
+    icon: Brand.warmGray,
+    tabIconDefault: Brand.warmGray,
+    tabIconSelected: Brand.green,
+    card: '#FFFFFF',
+    cardNested: '#F4F6F0',
+    modalBackground: '#E8F1DC',
+    border: '#C8D0BC',
+    shadow: '#2d3c1c22',
+    gradientStart: Brand.paleGreen,
+    gradientEnd: '#F9FBF7',
+    // semantic mappings for macros
+    carbs: '#E67A3C', // orange-ish for carbs
+    proteins: '#82ad51',
+    fats: '#d94b4b',
+    // brand accents
+    brandDeep: Brand.deepOlive,
+    brandLight: Brand.paleGreen,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: '#ECEDEE', // light text on dark bg
+    background: Brand.deepOlive,
+    backgroundSoft: '#22241e',
+    tint: Brand.paleGreen,
+    primary: Brand.olive,
+    secondary: Brand.green,
+    icon: Brand.lightStone,
+    tabIconDefault: Brand.lightStone,
+    tabIconSelected: Brand.paleGreen,
+    card: '#1B1D19',
+    cardNested: '#22241e',
+    modalBackground: '#353f2e',
+    border: '#3d4038',
+    shadow: '#00000090',
+    gradientStart: Brand.deepOlive,
+    gradientEnd: Brand.olive,
+    carbs: '#E67A3C',
+    proteins: '#82ad51',
+    fats: '#d94b4b',
+    brandDeep: Brand.deepOlive,
+    brandLight: Brand.paleGreen,
   },
 };
+
+export const Shadows = {
+  card: {
+    shadowColor: '#2d3c1c',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  cardSoft: {
+    shadowColor: '#2d3c1c',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+} as const;
 
 export const Fonts = Platform.select({
   ios: {
