@@ -7,7 +7,11 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import 'react-native-reanimated';
 
+import { FONT_FILES } from '@/constants/fonts';
+import { setupGlobalFonts } from '@/lib/setup-global-fonts';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+setupGlobalFonts();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,22 +22,17 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  const [fontsLoaded, fontError] = useFonts({
-    // Основные варианты TikTok Sans — используем готовые ttf из папки static
-    'TikTokSans': require('../assets/fonts/TikTok_Sans/static/TikTokSans-Regular.ttf'),
-    'TikTokSans-Light': require('../assets/fonts/TikTok_Sans/static/TikTokSans-Light.ttf'),
-    'TikTokSans-Medium': require('../assets/fonts/TikTok_Sans/static/TikTokSans-Medium.ttf'),
-    'TikTokSans-SemiBold': require('../assets/fonts/TikTok_Sans/static/TikTokSans-SemiBold.ttf'),
-    'TikTokSans-Bold': require('../assets/fonts/TikTok_Sans/static/TikTokSans-Bold.ttf'),
-    'TikTokSans-ExtraBold': require('../assets/fonts/TikTok_Sans/static/TikTokSans-ExtraBold.ttf'),
-    'TikTokSans-Black': require('../assets/fonts/TikTok_Sans/static/TikTokSans-Black.ttf'),
-  });
+  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <View style={{ flex: 1 }}>

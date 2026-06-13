@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore, GoalType } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { OptionCard } from '@/components/ui/option-card';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { GoalType, useUserStore } from '@/store/userStore';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const GOALS: { id: GoalType; title: string; description: string; icon: string }[] = [
   {
@@ -45,12 +45,8 @@ export default function GoalScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Добро пожаловать в EasyWay! 🎉
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.icon }]}>
-            Давайте настроим приложение под ваши цели
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Цели</Text>
+          <Text style={[styles.subtitle, { color: colors.icon }]}>Давайте настроим приложение под ваши цели</Text>
         </View>
 
         <View style={styles.goalsContainer}>
@@ -90,12 +86,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
   },
   goalsContainer: {
     marginBottom: 24,

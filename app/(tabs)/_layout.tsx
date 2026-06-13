@@ -3,7 +3,7 @@ import React from 'react';
 
 import { HapticTab } from '../../components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
@@ -23,6 +23,7 @@ export default function TabLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
         },
+        tabBarLabelStyle: Typography.tabLabel,
       }}>
       <Tabs.Screen
         name="index"

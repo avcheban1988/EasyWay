@@ -1,5 +1,5 @@
 import { InfoModal } from '@/components/ui/info-modal';
-import { Colors, Shadows } from '@/constants/theme';
+import { Colors, Shadows, Typography, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
@@ -156,7 +156,7 @@ export function SummaryCard() {
                 style={{
                   transform: [{ scale: helpPulse }],
                   fontSize: 16,
-                  fontWeight: '700',
+                  fontFamily: fontFamily('bold', '24'),
                   color: colors.tint,
                   opacity: helpPulse.interpolate({ inputRange: [0.9, 1.25], outputRange: [0.7, 1] }),
                   textShadowRadius: helpPulse.interpolate({ inputRange: [0.9, 1.25], outputRange: [0, 12] }),
@@ -245,24 +245,24 @@ export function SummaryCard() {
 
       <InfoModal visible={infoOpen} onClose={() => setInfoOpen(false)} title="История веса">
         {weightEntries.length === 0 ? (
-          <Text style={{ color: colors.text, fontFamily: 'TikTokSans', lineHeight: 22 }}>
+          <Text style={{ ...Typography.body, color: colors.text }}>
             Данных ещё нет. Добавьте текущий вес в профиле.
           </Text>
         ) : (
           weightEntries.map((w) => (
             <View key={w.id} style={{ paddingVertical: 6 }}>
-              <Text style={{ fontWeight: '700', color: colors.text, fontFamily: 'TikTokSans-SemiBold' }}>{w.weight} kg</Text>
-              <Text style={{ color: colors.icon, fontFamily: 'TikTokSans' }}>{w.date}</Text>
+              <Text style={{ ...Typography.bodySemiBold, color: colors.text }}>{w.weight} kg</Text>
+              <Text style={{ ...Typography.caption, color: colors.icon }}>{w.date}</Text>
             </View>
           ))
         )}
       </InfoModal>
 
       <InfoModal visible={helpOpen} onClose={() => setHelpOpen(false)} title="О недельных целях">
-        <Text style={{ marginBottom: 8, color: colors.text, fontFamily: 'TikTokSans', lineHeight: 22 }}>
+        <Text style={{ ...Typography.body, marginBottom: 8, color: colors.text }}>
           Здесь показывается суммарное количество углеводов, белков и жиров за последние 7 дней. Цель — приблизиться к недельной норме (сумма дневных целей × 7). Если в какой-то день вы переели или недоели — не переживайте: важна общая картина к концу недели.
         </Text>
-        <Text style={{ color: colors.text, fontFamily: 'TikTokSans', lineHeight: 22 }}>
+        <Text style={{ ...Typography.body, color: colors.text }}>
           Нажмите на полосу, чтобы развернуть подробности и увидеть сколько съедено и сколько осталось до недельной цели.
         </Text>
       </InfoModal>
@@ -287,12 +287,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans',
+    ...Typography.title,
   },
   greeting: {
-    fontSize: 14,
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
     marginTop: 2,
   },
   logoWrap: {
@@ -318,8 +317,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   barLabel: {
+    ...Typography.caption,
     width: 90,
-    fontSize: 13,
   },
   barTrack: {
     flex: 1,
@@ -334,9 +333,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   barValue: {
+    ...Typography.caption,
     width: 90,
     textAlign: 'right',
-    fontSize: 12,
   },
   compactRow: {
     flexDirection: 'row',
@@ -362,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   compactLabel: {
-    fontSize: 12,
+    ...Typography.caption,
     textAlign: 'center',
   },
   middleHeader: {
@@ -390,11 +389,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   statTextItalic: {
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
     fontStyle: 'italic',
-    fontSize: 14,
   },
   highlight: {
-    fontWeight: '800',
+    fontFamily: fontFamily('bold', '24'),
     fontStyle: 'italic',
   },
   bottomRow: {
@@ -408,11 +408,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    ...Typography.caption,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...Typography.bodySemiBold,
     marginTop: 4,
   },
 });

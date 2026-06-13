@@ -5,7 +5,7 @@ import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { GymDaysSelector } from '@/components/ui/gym-days-selector';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function GymFrequencyScreen() {
   const router = useRouter();
@@ -65,19 +65,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.title,
     marginBottom: 12,
   },
   footer: {

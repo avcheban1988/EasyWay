@@ -1,4 +1,4 @@
-import { Colors, Shadows } from '@/constants/theme';
+import { Colors, Shadows, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -57,9 +57,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans-Bold',
+    ...Typography.title,
     marginBottom: 10,
   },
   content: {
@@ -73,9 +71,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   closeText: {
+    ...Typography.bodySemiBold,
     color: '#fff',
-    fontWeight: '700',
-    fontFamily: 'TikTokSans-SemiBold',
   },
 });
 

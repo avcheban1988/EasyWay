@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import React from 'react';
 import { Text, TextProps, useColorScheme } from 'react-native';
 
@@ -13,15 +13,15 @@ export function ThemedText({ style, type = 'default', ...props }: ThemedTextProp
   const getTextStyle = () => {
     switch (type) {
       case 'title':
-        return { fontSize: 28, fontFamily: 'TikTokSans-Bold', color: colors.text };
+        return { ...Typography.display, color: colors.text };
       case 'defaultSemiBold':
-        return { fontFamily: 'TikTokSans-SemiBold' };
+        return Typography.bodySemiBold;
       case 'subtitle':
-        return { fontSize: 16, fontFamily: 'TikTokSans-Medium', color: colors.icon };
+        return { ...Typography.subtitle, color: colors.icon };
       case 'link':
-        return { color: colors.tint, fontFamily: 'TikTokSans-SemiBold' };
+        return { ...Typography.bodySemiBold, color: colors.tint };
       default:
-        return { fontFamily: 'TikTokSans' };
+        return Typography.body;
     }
   };
 

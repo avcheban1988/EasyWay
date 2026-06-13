@@ -1,4 +1,4 @@
-import { Colors, Shadows } from '@/constants/theme';
+import { Colors, Shadows, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DailyMacros } from '@/store/userStore';
 import React from 'react';
@@ -60,20 +60,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   caloriesLabel: {
+    ...Typography.label,
     color: '#fff',
-    fontSize: 14,
     marginBottom: 8,
-    fontFamily: 'TikTokSans',
   },
   caloriesValue: {
+    ...Typography.stat,
     color: '#fff',
     fontSize: 44,
-    fontFamily: 'TikTokSans',
+    lineHeight: 48,
   },
   caloriesUnit: {
+    ...Typography.label,
     color: '#fff',
-    fontSize: 14,
-    fontFamily: 'TikTokSans',
   },
   macrosContainer: {
     flexDirection: 'row',
@@ -83,14 +82,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   macroLabel: {
-    fontSize: 14,
+    ...Typography.label,
     marginBottom: 4,
   },
   macroValue: {
+    ...Typography.headline,
     fontSize: 24,
-    fontWeight: '600',
+    lineHeight: 28,
   },
   macroUnit: {
-    fontSize: 14,
+    ...Typography.label,
   },
 });

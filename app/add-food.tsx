@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { OptionCard } from '@/components/ui/option-card';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MealType, useFoodStore } from '@/store/foodStore';
 import { useRouter } from 'expo-router';
@@ -40,7 +40,7 @@ export default function AddFoodScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text, fontFamily: 'TikTokSans' }]}>Добавить прием пищи</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Добавить прием пищи</Text>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Тип</Text>
         <View style={styles.row}>
@@ -56,9 +56,9 @@ export default function AddFoodScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Название</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Название</Text>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             value={name}
             onChangeText={setName}
             placeholder="Например: Омлет"
@@ -67,9 +67,9 @@ export default function AddFoodScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Калории (ккал)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Калории (ккал)</Text>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             keyboardType="numeric"
             value={calories}
             onChangeText={setCalories}
@@ -77,9 +77,9 @@ export default function AddFoodScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Белки (г)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Белки (г)</Text>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             keyboardType="numeric"
             value={proteins}
             onChangeText={setProteins}
@@ -87,9 +87,9 @@ export default function AddFoodScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Жиры (г)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Жиры (г)</Text>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             keyboardType="numeric"
             value={fats}
             onChangeText={setFats}
@@ -97,9 +97,9 @@ export default function AddFoodScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Углеводы (г)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Углеводы (г)</Text>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             keyboardType="numeric"
             value={carbs}
             onChangeText={setCarbs}
@@ -120,29 +120,25 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans',
+    ...Typography.display,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'TikTokSans',
+    ...Typography.title,
     marginBottom: 8,
   },
   inputGroup: {
     marginBottom: 12,
   },
   label: {
+    ...Typography.label,
     marginBottom: 6,
-    fontSize: 14,
   },
   input: {
+    ...Typography.input,
     padding: Platform.select({ ios: 14, android: 10 }),
     borderWidth: 1,
     borderRadius: 10,
-    fontSize: 16,
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 6,

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { OptionCard } from '@/components/ui/option-card';
 import { ACTIVITY_LEVELS } from '@/constants/activityLevels';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function ActivityScreen() {
   const router = useRouter();
@@ -70,12 +70,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
   },
   activitiesContainer: {
     marginBottom: 24,

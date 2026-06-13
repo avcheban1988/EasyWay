@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { GenderType } from '@/store/userStore';
 
 interface GenderSelectorProps {
@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   optionText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.bodySemiBold,
   },
 });

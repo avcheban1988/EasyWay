@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
-import { ScreenBackground } from '@/components/ui/screen-background';
-import { Colors } from '@/constants/theme';
+import InputField from '@/components/ui/input-field';
+import { Colors, Typography, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
-import { useUserStore, type UserProfile } from '@/store/userStore';
+import { useUserStore } from '@/store/userStore';
+import { getNextOnboardingRoute } from '@/utils/get-next-route';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -21,6 +22,29 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<'signup' | 'signin'>(() => (account ? 'signin' : 'signup'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneRaw, setPhoneRaw] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+  const phoneAnim = useRef(new Animated.Value(0)).current;
+  // Pressable with scale animation wrapper
+  function PressableScale({ children, style, onPress, activeOpacity = 0.85, ...props }: any) {
+    const scale = useRef(new Animated.Value(1)).current;
+    const onPressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
+    const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
+    return (
+      <TouchableOpacity
+        style={style}
+        activeOpacity={activeOpacity}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={onPress}
+        {...props}
+      >
+        <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
+      </TouchableOpacity>
+    );
+  }
   const [agree, setAgree] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +80,58 @@ export default function AuthScreen() {
 
   const isValidEmail = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
   const isValidPassword = useMemo(() => password.length >= 6, [password]);
+  const normalizePhone = (input: string) => {
+    const digits = input.replace(/\D/g, '');
+    if (digits.length === 0) return null;
+    // take last 10 digits as national number
+    const national = digits.length > 10 ? digits.slice(-10) : digits.length === 10 ? digits : digits;
+    if (national.length < 10) return null;
+    const part1 = national.slice(0, 3);
+    const part2 = national.slice(3);
+    return `${part1} ${part2}`;
+  };
+  const normalizedPhone = useMemo(() => normalizePhone(phoneRaw), [phoneRaw]);
+
+  // display value: always show +7 prefix and format partial input nicely
+  const phoneDisplay = useMemo(() => {
+    const digits = phoneRaw.replace(/\D/g, '');
+    // remove leading country/local prefix if present (7 or 8)
+    let core = digits.replace(/^(8|7)/, '');
+    // if user pasted long string, keep last 10
+    if (core.length > 10) core = core.slice(-10);
+    if (!core) return '';
+    if (core.length >= 10) {
+      const national = core.slice(-10);
+      const part1 = national.slice(0, 3);
+      const part2 = national.slice(3);
+      return `+7 ${part1} ${part2}`;
+    }
+    const p1 = core.slice(0, 3);
+    const p2 = core.slice(3);
+    return `+7 ${p1}${p2 ? ' ' + p2 : ''}`;
+  }, [phoneRaw]);
+
+  const IMAGE_HEIGHT = 390;
+  const TARGET_TOP = 50; // final top offset for the input block
+  const MOVE_UP = IMAGE_HEIGHT - TARGET_TOP;
+  const INPUT_OFFSET = 60; // keep inputs lower by this many pixels when moved up
+
+  const handlePhoneFocus = () => {
+    setPhoneFocused(true);
+    Animated.timing(phoneAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+  };
+
+  const handlePhoneBlur = () => {
+    // keep focused state; user can press back arrow to return
+  };
+
+  const handleBackFromPhone = () => {
+    Animated.timing(phoneAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      // откатываем состояние фокуса и оставляем пользователя на том же экране
+      setPhoneFocused(false);
+      setPhoneTouched(false);
+    });
+  };
 
   const animateQuoteChange = () => {
     // анимируем старую вверх полностью и исчезаем
@@ -81,22 +157,18 @@ export default function AuthScreen() {
 
   const canSubmit = useMemo(() => {
     if (loading) return false;
+    if (mode === 'signup') {
+      // for phone signup require valid phone and agreement
+      if (!normalizedPhone) return false;
+      if (!agree) return false;
+      return true;
+    }
+
     if (!email.trim() || !password.trim()) return false;
     if (!isValidEmail || !isValidPassword) return false;
     if (mode === 'signup' && !agree) return false;
     return true;
-  }, [agree, email, loading, mode, password]);
-
-  const getNextRoute = (profile: UserProfile) => {
-    if (profile.isOnboarded) return '/(tabs)';
-    if (!profile.goal) return '/onboarding/goal';
-    if (!profile.gender || profile.age === null || profile.height === null || profile.weight === null) {
-      return '/onboarding/anthropometry';
-    }
-    if (!profile.activityLevel) return '/onboarding/activity';
-    if (profile.gymDaysPerWeek === null) return '/onboarding/gym-frequency';
-    return '/onboarding/results';
-  };
+  }, [agree, email, loading, mode, password, normalizedPhone]);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -105,11 +177,15 @@ export default function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        await signUp({ email, password });
-        // Start onboarding from scratch for a new account.
+        // Phone signup flow: normalize phone and proceed to onboarding
+        if (!normalizedPhone) {
+          setError('Неверный номер телефона');
+          setLoading(false);
+          return;
+        }
+        // Here you would call signUpByPhone(normalizedPhone) — skipping backend integration.
         resetProfile();
-        await loadProfile(email);
-        router.replace(getNextRoute(useUserStore.getState().userProfile));
+        router.replace('/onboarding/goal');
         return;
       }
 
@@ -120,7 +196,7 @@ export default function AuthScreen() {
         return;
       }
       await loadProfile(email);
-      router.replace(getNextRoute(useUserStore.getState().userProfile));
+      router.replace(getNextOnboardingRoute(useUserStore.getState().userProfile));
       return;
     } catch (err) {
       setError('Произошла ошибка. Попробуйте позже.');
@@ -130,21 +206,79 @@ export default function AuthScreen() {
   };
 
   return (
-    <ScreenBackground
-      source={require('../../assets/images/bg1.jpg')}
-      overlayColor="rgba(0, 0, 0, 0.12)"
-      imageScale={1.2}
-    >
-      <View style={styles.container}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.header, { backgroundColor: colors.primary, borderColor: 'transparent' }]}> 
-          <Image source={require('../../assets/icons/logo.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={[styles.title, { color: '#fff', fontFamily: 'TikTokSans-Bold', textTransform: 'uppercase' }]}>{titleText}</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}> 
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={mode === 'signup' ? [styles.scrollContent, { paddingTop: 0 }] : styles.scrollContent}
+      >
+        {mode === 'signup' ? (
+          <View style={{ flex: 1, backgroundColor: '#fff', marginHorizontal: -20, marginTop: -20, paddingHorizontal: 0 }}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+              <View style={{ width: '100%', height: IMAGE_HEIGHT }}>
+                <Animated.Image
+                  source={require('../../assets/images/RegAuth/vegetable.png')}
+                  style={[styles.regImage, { position: 'absolute', top: 0, left: 0, right: 0, opacity: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) } ]}
+                  resizeMode="cover"
+                />
+                <Animated.Image
+                  source={require('../../assets/images/RegAuth/bgNumber.png')}
+                  style={[styles.regImage, { position: 'absolute', top: 0, left: 0, right: 0, opacity: phoneAnim } ]}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={{ height: 30 }} />
+              <Animated.View style={{ paddingHorizontal: 20, transform: [{ translateY: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -(MOVE_UP - INPUT_OFFSET)] }) }] }}>
+                <Animated.View style={{ position: 'absolute', top: TARGET_TOP - 120, left: 25, opacity: phoneAnim, zIndex: 60 }}>
+                  <PressableScale onPress={handleBackFromPhone} style={{ padding: 6 }}>
+                    <Image source={require('../../assets/images/RegAuth/backArrow.svg')} style={styles.backButtonIcon} />
+                  </PressableScale>
+                </Animated.View>
 
-          {mode === 'signup' ? (
-            <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.95)', fontFamily: 'TikTokSans-Light', fontStyle: 'italic', textTransform: 'none', maxWidth: 340, textAlign: 'center' }]}>сегодня ты меняешь своё завтра</Text>
-          ) : (
-            <View style={{ overflow: 'hidden', height: QUOTE_CONTAINER_HEIGHT, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={[styles.phoneLabel, { color: colors.text }]}>Введите номер телефона</Text>
+
+                <InputField
+                  label=""
+                  value={phoneDisplay}
+                  onChangeText={(t) => {
+                    // keep only digits in internal state
+                    const d = t.replace(/\D/g, '');
+                    setPhoneRaw(d);
+                  }}
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
+                  placeholder={'+7 '}
+                  errorText={phoneTouched && !normalizedPhone ? 'Введите корректный номер' : null}
+                  onFocus={() => { setPhoneTouched(false); handlePhoneFocus(); }}
+                  onBlur={() => { setPhoneTouched(true); handlePhoneBlur(); }}
+                />
+
+                <Animated.View style={{ alignItems: 'center', marginTop: 18, opacity: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }} pointerEvents={phoneFocused ? 'none' : 'auto'}>
+                  <Text style={[styles.orText, { color: colors.icon }]}>или можете войти через социальные сети</Text>
+                </Animated.View>
+
+                <Animated.View style={[styles.socialButtonsWrap, { opacity: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]} pointerEvents={phoneFocused ? 'none' : 'auto'}>
+                  <PressableScale style={[styles.socialWideButton, styles.buttonShadow]} onPress={() => setError(null)}>
+                    <Text style={styles.socialWideButtonText}>Войти через VK</Text>
+                  </PressableScale>
+                  <PressableScale style={[styles.socialWideButton, { marginTop: 12 }, styles.buttonShadow]} onPress={() => setError(null)}>
+                    <Text style={styles.socialWideButtonText}>Войти через Яндекс</Text>
+                  </PressableScale>
+                </Animated.View>
+                {/* регистрационная кнопка удалена */}
+
+                <Animated.View style={[styles.nextFabWrap, { opacity: phoneAnim }]} pointerEvents={phoneFocused ? 'auto' : 'none'}>
+                  <PressableScale style={[styles.nextFab, styles.buttonShadow]} onPress={handleSubmit}>
+                    <Image source={require('../../assets/images/RegAuth/arrowNext.svg')} style={styles.nextFabIcon} />
+                  </PressableScale>
+                </Animated.View>
+              </Animated.View>
+            </ScrollView>
+          </View>
+        ) : (
+          <View style={[styles.header, { backgroundColor: colors.primary, borderColor: 'transparent' }]}> 
+          <Image source={require('../../assets/icons/logo.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={[styles.title, { color: '#fff', textTransform: 'uppercase' }]}>{titleText}</Text>
+
+          <View style={{ overflow: 'hidden', height: QUOTE_CONTAINER_HEIGHT, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
               <Animated.Text
                 numberOfLines={3}
                 style={[
@@ -156,7 +290,7 @@ export default function AuthScreen() {
                     right: 0,
                     textAlign: 'center',
                     color: 'rgba(255,255,255,0.95)',
-                    fontFamily: 'TikTokSans-Light',
+                    fontFamily: fontFamily('light', '18'),
                     fontStyle: 'italic',
                     transform: [{ translateY: quoteTranslate }],
                     opacity: quoteOpacity,
@@ -169,90 +303,51 @@ export default function AuthScreen() {
                 {quotes[quoteIndex]}
               </Animated.Text>
             </View>
-          )}
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderWidth: 0, shadowColor: colors.shadow }]}> 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Эл. почта</Text>
-            {(() => {
-              const emailBorderColor =
-                focusedField === 'email' ? colors.tint : emailTouched ? (isValidEmail ? colors.tint : '#d32f2f') : colors.border;
-              return (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: colors.text,
-                        borderColor: emailBorderColor,
-                        backgroundColor: colors.card,
-                        fontFamily: 'TikTokSans',
-                      },
-                    ]}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    placeholder="ваш@email.ru"
-                    placeholderTextColor={colors.icon}
-                    value={email}
-                    onChangeText={setEmail}
-                    selectionColor={colors.tint}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => {
-                      setFocusedField(null);
-                      setEmailTouched(true);
-                    }}
-                  />
-                  {emailTouched && !isValidEmail ? (
-                    <Text style={{ color: '#d32f2f', fontSize: 12, marginTop: 6 }}>Неверный email</Text>
-                  ) : null}
-                </>
-              );
-            })()}
-          </View>
+        )}
 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.text, fontFamily: 'TikTokSans' }]}>Пароль</Text>
-            {(() => {
-              const passBorderColor =
-                focusedField === 'password' ? colors.tint : passwordTouched ? (isValidPassword ? colors.tint : '#d32f2f') : colors.border;
-              return (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: colors.text,
-                        borderColor: passBorderColor,
-                        backgroundColor: colors.card,
-                        fontFamily: 'TikTokSans',
-                      },
-                    ]}
-                    secureTextEntry
-                    placeholder="Пароль"
-                    placeholderTextColor={colors.icon}
-                    value={password}
-                    onChangeText={setPassword}
-                    selectionColor={colors.tint}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => {
-                      setFocusedField(null);
-                      setPasswordTouched(true);
-                    }}
-                  />
-                  {passwordTouched && !isValidPassword ? (
-                    <Text style={{ color: '#d32f2f', fontSize: 12, marginTop: 6 }}>Пароль должен быть не короче 6 символов</Text>
-                  ) : null}
-                </>
-              );
-            })()}
-          </View>
+        {mode !== 'signup' && (
+          <View style={[styles.card, { backgroundColor: colors.card, borderWidth: 0, shadowColor: colors.shadow }]}> 
+          <InputField
+            label="Эл. почта"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            placeholder="ваш@email.ru"
+            errorText={emailTouched && !isValidEmail ? 'Неверный email' : null}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => {
+              setFocusedField(null);
+              setEmailTouched(true);
+            }}
+          />
+
+          <InputField
+            label="Пароль"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="Пароль"
+            errorText={passwordTouched && !isValidPassword ? 'Пароль должен быть не короче 6 символов' : null}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => {
+              setFocusedField(null);
+              setPasswordTouched(true);
+            }}
+          />
 
           {mode === 'signup' && (
-            <TouchableOpacity style={styles.checkboxRow} onPress={() => setAgree((v) => !v)} activeOpacity={0.7}>
-              <View style={[styles.checkbox, agree && styles.checkboxChecked, { borderColor: colors.tint }]} />
-              <Text style={[styles.checkboxText, { color: colors.icon, fontFamily: 'TikTokSans' }]}>Я принимаю условия сервиса.</Text>
-            </TouchableOpacity>
+            <PressableScale
+              style={styles.checkboxRow}
+              onPress={() => setAgree((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.checkbox, agree && styles.checkboxChecked, { borderColor: colors.tint }]}> 
+                {agree ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+              <Text style={[styles.checkboxText, { color: colors.icon }]}>Я принимаю условия сервиса.</Text>
+            </PressableScale>
           )}
 
           {error && <Text style={[styles.errorText, { color: '#d32f2f' }]}>{error}</Text>}
@@ -268,34 +363,41 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: colors.icon, fontFamily: 'TikTokSans' }]}> 
+            <Text style={[styles.switchText, { color: colors.icon }]}> 
               {mode === 'signup' ? 'Уже есть аккаунт?' : 'Нет аккаунта?'}
             </Text>
-            <TouchableOpacity onPress={() => setMode((m) => (m === 'signup' ? 'signin' : 'signup'))} style={styles.switchButton}>
-              <Text style={[styles.switchButtonText, { color: colors.tint, fontFamily: 'TikTokSans' }]}> 
+            <PressableScale
+              onPress={() => {
+                setMode((m) => (m === 'signup' ? 'signin' : 'signup'));
+                setError(null);
+              }}
+              style={styles.switchButton}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.switchButtonText, { color: colors.tint }]}> 
                 {mode === 'signup' ? 'Войти' : 'Создать'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.socialRow}>
             {['G', '', 'f', 'X'].map((label, idx) => (
-              <TouchableOpacity
+              <PressableScale
                 key={idx}
-                style={styles.socialButton}
-                activeOpacity={0.7}
+                style={[styles.socialButton, styles.buttonShadow]}
+                activeOpacity={0.8}
                 onPress={() => setError(null)}
               >
-                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.icon }}>{label}</Text>
-              </TouchableOpacity>
+                <Text style={[Typography.title, { color: colors.icon }]}>{label}</Text>
+              </PressableScale>
             ))}
           </View>
-        </View>
+          </View>
+        )}
         </ScrollView>
       </View>
-    </ScreenBackground>
   );
 }
 
@@ -324,15 +426,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
+    ...Typography.displayLarge,
     fontSize: 30,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: 'TikTokSans',
+    ...Typography.body,
+    fontFamily: fontFamily('light', '18'),
     textAlign: 'center',
   },
   logo: {
@@ -357,23 +458,21 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
-    fontSize: 14,
+    ...Typography.label,
     marginBottom: 6,
-    fontWeight: '600',
   },
   input: {
+    ...Typography.input,
     paddingVertical: Platform.select({ ios: 14, android: 14 }),
     paddingHorizontal: 20,
     borderWidth: 1,
     borderRadius: 12,
     minHeight: 56,
-    fontWeight: '600',
-    fontFamily: 'TikTokSans',
-    // Slightly muted text for placeholder on web/ios fallback
     opacity: 1,
   },
 
   checkboxRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 10,
@@ -385,17 +484,24 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginRight: 10,
     backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkboxChecked: {
     backgroundColor: '#7cb342',
   },
+  checkboxMark: {
+    color: '#fff',
+    fontSize: 14,
+    lineHeight: 16,
+  },
   checkboxText: {
-    fontSize: 12,
+    ...Typography.caption,
     flex: 1,
   },
 
   errorText: {
-    fontSize: 13,
+    ...Typography.caption,
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -415,14 +521,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   switchText: {
-    fontSize: 13,
+    ...Typography.caption,
   },
   switchButton: {
     paddingLeft: 6,
   },
   switchButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...Typography.caption,
+    fontFamily: Typography.bodySemiBold.fontFamily,
   },
   divider: {
     height: 1,
@@ -442,5 +548,72 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  regImage: {
+    width: '100%',
+    height: 390,
+    marginTop: -20,
+    alignSelf: 'stretch',
+  },
+  phoneLabel: {
+    fontFamily: fontFamily('semiBold', '24'),
+    fontSize: 20,
+    lineHeight: 26,
+    marginBottom: 12,
+  },
+  orText: {
+    fontFamily: fontFamily('light', '18'),
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  socialButtonsWrap: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  socialWideButton: {
+    width: '80%',
+    backgroundColor: '#5383EC',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  socialWideButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: fontFamily('light', '24'),
+  },
+  nextFabWrap: {
+    position: 'absolute',
+    right: 20,
+    bottom: 12,
+    zIndex: 30,
+  },
+  nextFab: {
+    width: 67,
+    height: 67,
+    borderRadius: 34,
+    backgroundColor: '#53B175',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  nextFabIcon: {
+    width: 18,
+    height: 18,
+  },
+  backButtonIcon: {
+    width: 12,
+    height: 12,
+  },
+  buttonShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

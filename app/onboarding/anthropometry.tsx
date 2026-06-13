@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { GenderSelector } from '@/components/ui/gender-selector';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GenderType, useUserStore } from '@/store/userStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import InputField from '@/components/ui/input-field';
 
 export default function AnthropometryScreen() {
   const router = useRouter();
@@ -72,37 +73,31 @@ export default function AnthropometryScreen() {
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Возраст</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              keyboardType="numeric"
+            <InputField
               value={localAge.toString()}
               onChangeText={handleAgeChange}
+              keyboardType="numeric"
               placeholder="16-90 лет"
-              placeholderTextColor={colors.icon}
             />
           </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Рост (см)</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              keyboardType="numeric"
+            <InputField
               value={localHeight.toString()}
               onChangeText={handleHeightChange}
+              keyboardType="numeric"
               placeholder="140-220 см"
-              placeholderTextColor={colors.icon}
             />
           </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Вес (кг)</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              keyboardType="numeric"
+            <InputField
               value={localWeight.toString()}
               onChangeText={handleWeightChange}
+              keyboardType="numeric"
               placeholder="40-200 кг"
-              placeholderTextColor={colors.icon}
             />
           </View>
         </View>
@@ -131,14 +126,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: 'TikTokSans',
+    ...Typography.body,
   },
   form: {
     marginBottom: 24,
@@ -147,8 +139,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.title,
     marginBottom: 12,
   },
   input: {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 
 interface SliderInputProps {
   label: string;
@@ -60,8 +60,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.bodySemiBold,
     marginBottom: 8,
   },
   inputContainer: {
@@ -73,12 +72,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   input: {
+    ...Typography.input,
     flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
   },
   unit: {
-    fontSize: 16,
+    ...Typography.body,
     marginLeft: 8,
   },
 });

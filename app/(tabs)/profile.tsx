@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { MainTabBackground } from '@/components/ui/main-tab-background';
 import { OptionCard } from '@/components/ui/option-card';
 import { ACTIVITY_LEVELS } from '@/constants/activityLevels';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GenderType, GoalType, useUserStore } from '@/store/userStore';
 import React, { useEffect, useRef, useState } from 'react';
@@ -86,8 +86,8 @@ export default function ProfileScreen() {
     <MainTabBackground>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-          <Text style={[styles.title, { color: colors.text, fontFamily: 'TikTokSans' }]}>Настройки профиля</Text>
-          <Text style={[styles.subtitle, { color: colors.icon, fontFamily: 'TikTokSans' }]}>Измените параметры, чтобы пересчитать норму</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Настройки профиля</Text>
+          <Text style={[styles.subtitle, { color: colors.icon }]}>Измените параметры, чтобы пересчитать норму</Text>
 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Цель</Text>
       <View style={styles.row}>
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
       <View style={styles.inputGroup}>
         <Text style={[styles.label, { color: colors.text }]}>Возраст</Text>
         <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
           keyboardType="numeric"
           value={localAge}
           onChangeText={setLocalAge}
@@ -131,7 +131,7 @@ export default function ProfileScreen() {
       <View style={styles.inputGroup}>
         <Text style={[styles.label, { color: colors.text }]}>Рост (см)</Text>
         <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
           keyboardType="numeric"
           value={localHeight}
           onChangeText={setLocalHeight}
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
       <View style={styles.inputGroup}>
         <Text style={[styles.label, { color: colors.text }]}>Вес (кг)</Text>
         <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, fontFamily: 'TikTokSans', backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
           keyboardType="numeric"
           value={localWeight}
           onChangeText={setLocalWeight}
@@ -177,35 +177,31 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'TikTokSans',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
     marginBottom: 20,
     color: '#777',
-    fontFamily: 'TikTokSans',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'TikTokSans',
+    ...Typography.title,
     marginVertical: 12,
   },
   inputGroup: {
     marginBottom: 12,
   },
   label: {
+    ...Typography.label,
     marginBottom: 6,
-    fontSize: 14,
   },
   input: {
+    ...Typography.input,
     padding: Platform.select({ ios: 14, android: 10 }),
     borderWidth: 1,
     borderRadius: 10,
-    fontSize: 16,
     marginBottom: 6,
     // subtle shadow for elevated input
     shadowColor: '#000',

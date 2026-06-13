@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
@@ -40,7 +40,6 @@ export function Button({
 
   const textColorStyle = [
     styles.text,
-    { fontFamily: 'TikTokSans' },
     variant === 'primary' && { color: '#fff' },
     variant === 'secondary' && { color: '#fff' },
     variant === 'outline' && { color: colors.tint },
@@ -72,10 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 56,
   },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  text: Typography.button,
   disabled: {
     opacity: 0.5,
   },

@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { MainTabBackground } from '@/components/ui/main-tab-background';
 import { MacrosDisplay } from '@/components/ui/macros-display';
-import { SurfaceCard } from '@/components/ui/surface-card';
+import { MainTabBackground } from '@/components/ui/main-tab-background';
 import SummaryCard from '@/components/ui/summary-card';
-import { Colors } from '@/constants/theme';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
@@ -48,10 +48,8 @@ export default function HomeScreen() {
     return (
       <MainTabBackground>
         <View style={styles.container}>
-          <Text style={[styles.title, { color: colors.text }]}>Добро пожаловать!</Text>
-          <Text style={[styles.subtitle, { color: colors.icon }]}>
-            Давайте настроим приложение под ваши цели
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Настройка приложения</Text>
+          <Text style={[styles.subtitle, { color: colors.icon }]}>Давайте настроим приложение под ваши цели</Text>
           <Button
             title="Начать настройку"
             onPress={() => router.push('/onboarding/goal')}
@@ -129,17 +127,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   title: {
-    fontSize: 32,
-    fontFamily: 'TikTokSans',
+    ...Typography.displayLarge,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'TikTokSans',
+    ...Typography.title,
     marginBottom: 10,
   },
   progressBox: {
@@ -152,12 +148,12 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   progressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.bodySemiBold,
     marginBottom: 8,
   },
   progressValue: {
-    fontSize: 14,
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
     marginBottom: 4,
   },
   mealRow: {
@@ -174,11 +170,10 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   mealName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.bodySemiBold,
   },
   mealNotes: {
-    fontSize: 12,
+    ...Typography.caption,
     marginTop: 2,
   },
   emptyText: {

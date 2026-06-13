@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, ViewStyle } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 
 interface OptionCardProps {
   title: string;
@@ -77,12 +77,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.bodySemiBold,
     marginBottom: 4,
   },
   description: {
-    fontSize: 14,
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
   },
   checkmark: {
     width: 24,
@@ -92,8 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkmarkText: {
+    ...Typography.bodySemiBold,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

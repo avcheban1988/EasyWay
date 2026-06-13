@@ -5,7 +5,7 @@ import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { MacrosDisplay } from '@/components/ui/macros-display';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function ResultsScreen() {
   const router = useRouter();
@@ -86,12 +86,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...Typography.display,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
   },
   infoSection: {
     marginBottom: 24,
@@ -100,17 +99,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.title,
     marginBottom: 12,
   },
   infoText: {
-    fontSize: 14,
+    ...Typography.label,
+    fontFamily: Typography.body.fontFamily,
     marginBottom: 8,
-    lineHeight: 20,
   },
   loadingText: {
-    fontSize: 18,
+    ...Typography.title,
     textAlign: 'center',
     marginTop: 40,
   },
