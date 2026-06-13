@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { GymDaysSelector } from '@/components/ui/gym-days-selector';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors, Typography } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useUserStore } from '@/store/userStore';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function GymFrequencyScreen() {
   const router = useRouter();
@@ -33,20 +33,21 @@ export default function GymFrequencyScreen() {
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <GymDaysSelector
-            selected={localGymDays}
-            onSelect={setLocalGymDays}
-          />
-        </View>
+        <View style={styles.card}>
+          <View style={styles.section}>
+            <GymDaysSelector
+              selected={localGymDays}
+              onSelect={setLocalGymDays}
+            />
+          </View>
 
-
-        <View style={styles.footer}>
-          <Button
-            title="Рассчитать"
-            onPress={handleNext}
-            disabled={localGymDays === null}
-          />
+          <View style={styles.ctaWrap}>
+            <Button
+              title="Рассчитать"
+              onPress={handleNext}
+              disabled={localGymDays === null}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -73,6 +74,22 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 0,
+    backgroundColor: '#FAFBF7',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 18,
+  },
+  ctaWrap: {
+    position: 'relative',
+    marginTop: 6,
   },
   sectionTitle: {
     ...Typography.title,

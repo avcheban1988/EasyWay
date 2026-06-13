@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { OptionCard } from '@/components/ui/option-card';
 import { ACTIVITY_LEVELS } from '@/constants/activityLevels';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors, Typography } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useUserStore } from '@/store/userStore';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function ActivityScreen() {
   const router = useRouter();
@@ -34,24 +34,26 @@ export default function ActivityScreen() {
           </Text>
         </View>
 
-        <View style={styles.activitiesContainer}>
-          {ACTIVITY_LEVELS.map((level) => (
-            <OptionCard
-              key={level.id}
-              title={level.title}
-              description={level.description}
-              selected={activityLevel === level.id}
-              onPress={() => setActivityLevel(level.id)}
-            />
-          ))}
-        </View>
+        <View style={styles.card}>
+          <View style={styles.activitiesContainer}>
+            {ACTIVITY_LEVELS.map((level) => (
+              <OptionCard
+                key={level.id}
+                title={level.title}
+                description={level.description}
+                selected={activityLevel === level.id}
+                onPress={() => setActivityLevel(level.id)}
+              />
+            ))}
+          </View>
 
-        <View style={styles.footer}>
-          <Button
-            title="Далее"
-            onPress={handleNext}
-            disabled={!activityLevel}
-          />
+          <View style={styles.ctaWrap}>
+            <Button
+              title="Далее"
+              onPress={handleNext}
+              disabled={!activityLevel}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -78,6 +80,22 @@ const styles = StyleSheet.create({
   },
   activitiesContainer: {
     marginBottom: 24,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 0,
+    backgroundColor: '#FAFBF7',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 18,
+  },
+  ctaWrap: {
+    position: 'relative',
+    marginTop: 6,
   },
   footer: {
     marginTop: 'auto',

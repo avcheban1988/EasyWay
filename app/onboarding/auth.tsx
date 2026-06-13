@@ -48,6 +48,8 @@ export default function AuthScreen() {
   const [agree, setAgree] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authStep, setAuthStep] = useState<'phone' | 'sms'>('phone');
+  const [smsCode, setSmsCode] = useState('');
   
   // убираем анимацию логотипа — делаем статичное лого
   useEffect(() => {
@@ -177,16 +179,33 @@ export default function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        // Phone signup flow: normalize phone and proceed to onboarding
-        if (!normalizedPhone) {
-          setError('Неверный номер телефона');
+        // Phone signup flow: first step — отправка кода, вторая — проверка
+        if (authStep === 'phone') {
+          if (!normalizedPhone) {
+            setError('Неверный номер телефона');
+            setLoading(false);
+            return;
+          }
+          // simulate send SMS
+          setAuthStep('sms');
+          setPhoneFocused(true);
           setLoading(false);
           return;
         }
-        // Here you would call signUpByPhone(normalizedPhone) — skipping backend integration.
-        resetProfile();
-        router.replace('/onboarding/goal');
-        return;
+
+        // проверяем введённый код
+        if (authStep === 'sms') {
+          if (smsCode.length !== 4) {
+            setError('Введите 4-значный код');
+            setLoading(false);
+            return;
+          }
+          // тут логика: проверить, есть ли пользователь — если нет, создать и начать онбординг
+          // в текущем прототипе просто начинаем онбординг
+          resetProfile();
+          router.replace('/onboarding/goal');
+          return;
+        }
       }
 
       const ok = await signIn({ email, password });
@@ -234,22 +253,47 @@ export default function AuthScreen() {
                   </PressableScale>
                 </Animated.View>
 
-                <Text style={[styles.phoneLabel, { color: colors.text }]}>Введите номер телефона</Text>
+                {authStep === 'phone' ? (
+                  <>
+                    <Text style={[styles.phoneLabel, { color: colors.text }]}>Введите номер телефона</Text>
 
-                <InputField
-                  label=""
-                  value={phoneDisplay}
-                  onChangeText={(t) => {
-                    // keep only digits in internal state
-                    const d = t.replace(/\D/g, '');
-                    setPhoneRaw(d);
-                  }}
-                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
-                  placeholder={'+7 '}
-                  errorText={phoneTouched && !normalizedPhone ? 'Введите корректный номер' : null}
-                  onFocus={() => { setPhoneTouched(false); handlePhoneFocus(); }}
-                  onBlur={() => { setPhoneTouched(true); handlePhoneBlur(); }}
-                />
+                    <InputField
+                      label=""
+                      value={phoneDisplay}
+                      onChangeText={(t) => {
+                        // keep only digits in internal state
+                        const d = t.replace(/\D/g, '');
+                        setPhoneRaw(d);
+                      }}
+                      keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
+                      placeholder={'+7 '}
+                      errorText={phoneTouched && !normalizedPhone ? 'Введите корректный номер' : null}
+                      onFocus={() => { setPhoneTouched(false); handlePhoneFocus(); }}
+                      onBlur={() => { setPhoneTouched(true); handlePhoneBlur(); }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.phoneLabel, { color: colors.text }]}>Введите код из смс</Text>
+                    <InputField
+                      label=""
+                      value={smsCode.split('').join(' ')}
+                      onChangeText={(t) => {
+                        const d = t.replace(/\D/g, '').slice(0, 4);
+                        setSmsCode(d);
+                      }}
+                      keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
+                      placeholder={'- - - -'}
+                      errorText={smsCode && smsCode.length < 4 ? 'Код должен состоять из 4 цифр' : null}
+                      onFocus={() => { setPhoneTouched(false); handlePhoneFocus(); }}
+                      onBlur={() => { setPhoneTouched(true); handlePhoneBlur(); }}
+                    />
+
+                    <TouchableOpacity onPress={() => { /* resend logic placeholder */ }} style={{ marginTop: 10 }}>
+                      <Text style={{ color: '#53B175', fontFamily: fontFamily('regular', '18') }}>Отправить код еще раз</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
 
                 <Animated.View style={{ alignItems: 'center', marginTop: 18, opacity: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }} pointerEvents={phoneFocused ? 'none' : 'auto'}>
                   <Text style={[styles.orText, { color: colors.icon }]}>или можете войти через социальные сети</Text>

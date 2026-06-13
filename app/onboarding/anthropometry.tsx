@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { GenderSelector } from '@/components/ui/gender-selector';
+import InputField from '@/components/ui/input-field';
 import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GenderType, useUserStore } from '@/store/userStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import InputField from '@/components/ui/input-field';
 
 export default function AnthropometryScreen() {
   const router = useRouter();
@@ -62,7 +62,8 @@ export default function AnthropometryScreen() {
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={styles.card}>
+          <View style={styles.form}>
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Пол</Text>
             <GenderSelector
@@ -100,14 +101,15 @@ export default function AnthropometryScreen() {
               placeholder="40-200 кг"
             />
           </View>
-        </View>
+          </View>
 
-        <View style={styles.footer}>
-          <Button
-            title="Далее"
-            onPress={handleNext}
-            disabled={!isFormValid}
-          />
+          <View style={styles.ctaWrap}>
+            <Button
+              title="Далее"
+              onPress={handleNext}
+              disabled={!isFormValid}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -134,6 +136,22 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: 24,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 0,
+    backgroundColor: '#FAFBF7',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 18,
+  },
+  ctaWrap: {
+    position: 'relative',
+    marginTop: 6,
   },
   section: {
     marginBottom: 24,

@@ -8,10 +8,9 @@ import { View } from 'react-native';
 import 'react-native-reanimated';
 
 import { FONT_FILES } from '@/constants/fonts';
-import { setupGlobalFonts } from '@/lib/setup-global-fonts';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { setupGlobalFonts } from '@/lib/setup-global-fonts';
 
-setupGlobalFonts();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,6 +26,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+    }
+
+    if (fontsLoaded) {
+      setupGlobalFonts();
     }
   }, [fontsLoaded, fontError]);
 

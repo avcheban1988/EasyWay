@@ -69,9 +69,10 @@ export function fontFromWeight(
   }
 }
 
-export const FontFamily = {
+export const FontFamily = Platform.select({
+  web: 'Roboto',
   default: fontFamily('regular', '18'),
-} as const;
+}) as const;
 
 /** Готовые типографические стили — используйте вместо fontWeight. */
 export const Typography = {

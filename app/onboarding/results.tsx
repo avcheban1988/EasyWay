@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { MacrosDisplay } from '@/components/ui/macros-display';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors, Typography } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useUserStore } from '@/store/userStore';
+import { useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function ResultsScreen() {
   const router = useRouter();
@@ -46,9 +46,10 @@ export default function ResultsScreen() {
           </Text>
         </View>
 
-        <MacrosDisplay macros={dailyMacros} />
+        <View style={styles.card}>
+          <MacrosDisplay macros={dailyMacros} />
 
-        <View style={styles.infoSection}>
+          <View style={styles.infoSection}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>
             Что это значит?
           </Text>
@@ -61,13 +62,14 @@ export default function ResultsScreen() {
           <Text style={[styles.infoText, { color: colors.icon }]}>
             • Углеводы обеспечивают энергией для тренировок и повседневной активности
           </Text>
-        </View>
+          </View>
 
-        <View style={styles.footer}>
-          <Button
-            title="Начать отслеживание"
-            onPress={handleStartTracking}
-          />
+          <View style={styles.ctaWrap}>
+            <Button
+              title="Начать отслеживание"
+              onPress={handleStartTracking}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -114,5 +116,21 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 'auto',
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 0,
+    backgroundColor: '#FAFBF7',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 18,
+  },
+  ctaWrap: {
+    position: 'relative',
+    marginTop: 6,
   },
 });

@@ -49,25 +49,27 @@ export default function GoalScreen() {
           <Text style={[styles.subtitle, { color: colors.icon }]}>Давайте настроим приложение под ваши цели</Text>
         </View>
 
-        <View style={styles.goalsContainer}>
-          {GOALS.map((goalOption) => (
-            <OptionCard
-              key={goalOption.id}
-              title={goalOption.title}
-              description={goalOption.description}
-              selected={goal === goalOption.id}
-              onPress={() => setGoal(goalOption.id)}
-              icon={<Text style={styles.icon}>{goalOption.icon}</Text>}
-            />
-          ))}
-        </View>
+        <View style={styles.card}>
+          <View style={styles.goalsContainer}>
+            {GOALS.map((goalOption) => (
+              <OptionCard
+                key={goalOption.id}
+                title={goalOption.title}
+                description={goalOption.description}
+                selected={goal === goalOption.id}
+                onPress={() => setGoal(goalOption.id)}
+                icon={<Text style={styles.icon}>{goalOption.icon}</Text>}
+              />
+            ))}
+          </View>
 
-        <View style={styles.footer}>
-          <Button
-            title="Далее"
-            onPress={handleNext}
-            disabled={!goal}
-          />
+          <View style={styles.ctaWrap}>
+            <Button
+              title="Далее"
+              onPress={handleNext}
+              disabled={!goal}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -97,6 +99,22 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 32,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 0,
+    backgroundColor: '#FAFBF7',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 18,
+  },
+  ctaWrap: {
+    position: 'relative',
+    marginTop: 6,
   },
   footer: {
     marginTop: 'auto',
