@@ -25,7 +25,7 @@ export default function Index() {
       await loadProfile(accountEmail);
 
       const profile = useUserStore.getState().userProfile;
-      if (accountEmail && profile.isOnboarded) {
+      if (profile.isOnboarded) {
         router.replace('/(tabs)');
         return;
       }

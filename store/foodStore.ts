@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
 
 export type MealType = 'Завтрак' | 'Обед' | 'Ужин' | 'Перекус';
 
@@ -21,16 +21,22 @@ interface FoodStore {
   addFoodEntry: (entry: Omit<FoodEntry, 'id' | 'date'> & { date?: string }) => void;
   removeFoodEntry: (id: string) => void;
   getTodayEntries: () => FoodEntry[];
-  getTodayTotals: () => {
-    calories: number;
-    proteins: number;
-    fats: number;
-    carbs: number;
-  };
+  getTodayTotals: () => MacroTotals;
+  getWeekEntries: () => FoodEntry[];
+  getWeekTotals: () => MacroTotals;
+  getEntriesForDate: (date: string) => FoodEntry[];
+  getTotalsForDate: (date: string) => MacroTotals;
   loadFoodEntries: (email?: string | null) => Promise<void>;
   saveFoodEntries: () => Promise<void>;
   resetFoodEntries: () => void;
 }
+
+type MacroTotals = {
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbs: number;
+};
 
 const STORAGE_KEY = 'foodEntries';
 
@@ -73,6 +79,46 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
   getTodayTotals: () => {
     const today = getDateKey();
     const items = get().foodEntries.filter((entry) => entry.date === today);
+    return items.reduce(
+      (totals, item) => ({
+        calories: totals.calories + item.calories,
+        proteins: totals.proteins + item.proteins,
+        fats: totals.fats + item.fats,
+        carbs: totals.carbs + item.carbs,
+      }),
+      { calories: 0, proteins: 0, fats: 0, carbs: 0 }
+    );
+  },
+
+  getEntriesForDate: (date: string) => {
+    return get().foodEntries.filter((entry) => entry.date === date);
+  },
+
+  getTotalsForDate: (date: string) => {
+    const items = get().foodEntries.filter((entry) => entry.date === date);
+    return items.reduce(
+      (totals, item) => ({
+        calories: totals.calories + item.calories,
+        proteins: totals.proteins + item.proteins,
+        fats: totals.fats + item.fats,
+        carbs: totals.carbs + item.carbs,
+      }),
+      { calories: 0, proteins: 0, fats: 0, carbs: 0 }
+    );
+  },
+
+  getWeekEntries: () => {
+    const dates: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+    return get().foodEntries.filter((entry) => dates.includes(entry.date));
+  },
+
+  getWeekTotals: () => {
+    const items = get().getWeekEntries();
     return items.reduce(
       (totals, item) => ({
         calories: totals.calories + item.calories,

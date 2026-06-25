@@ -1,32 +1,93 @@
-import { Button } from '@/components/ui/button';
-import { OptionCard } from '@/components/ui/option-card';
-import { Colors, Typography } from '@/constants/theme';
+import { Colors, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GoalType, useUserStore } from '@/store/userStore';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+    Animated,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
+} from 'react-native';
 
-const GOALS: { id: GoalType; title: string; description: string; icon: string }[] = [
+const GOALS: {
+  id: GoalType;
+  title: string;
+  color: string;
+  iconName: keyof typeof MaterialIcons.glyphMap;
+}[] = [
   {
     id: 'lose',
     title: 'Похудеть',
-    description: 'Создать дефицит калорий для снижения веса',
-    icon: '📉',
+    color: '#53B175',
+    iconName: 'trending-down',
   },
   {
     id: 'maintain',
     title: 'Поддержать вес',
-    description: 'Сохранить текущий вес и улучшить качество питания',
-    icon: '⚖️',
+    color: '#F8A44C',
+    iconName: 'balance',
   },
   {
     id: 'gain',
     title: 'Набрать массу',
-    description: 'Создать профицит калорий для набора мышечной массы',
-    icon: '💪',
+    color: '#F7A593',
+    iconName: 'fitness-center',
+  },
+  {
+    id: 'manual',
+    title: 'Свои БЖУ',
+    color: '#D3B0E0',
+    iconName: 'calculate',
   },
 ];
+
+const PADDING = 20;
+const CARD_GAP = 12;
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function PressableScale({
+  children,
+  style,
+  onPress,
+  ...props
+}: {
+  children: React.ReactNode;
+  style?: any;
+  onPress?: () => void;
+  [key: string]: any;
+}) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const onPressIn = () =>
+    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
+  return (
+    <TouchableOpacity
+      style={style}
+      activeOpacity={0.85}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      {...props}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {children}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function GoalScreen() {
   const router = useRouter();
@@ -35,41 +96,86 @@ export default function GoalScreen() {
   const { userProfile, setGoal } = useUserStore();
   const goal = userProfile.goal;
 
-  const handleNext = () => {
-    if (goal) {
+  const { width: screenWidth } = useWindowDimensions();
+  const CARD_WIDTH = (screenWidth - PADDING * 2 - CARD_GAP) / 2;
+
+  const handleSelect = (id: GoalType) => {
+    setGoal(id);
+    if (id === 'manual') {
+      router.push('/onboarding/manual-macros');
+    } else {
       router.replace('/onboarding/anthropometry');
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Кнопка назад */}
+      <View style={styles.topBar}>
+        <PressableScale onPress={() => router.back()}>
+          <View style={[styles.backBtn, { backgroundColor: colors.card }]}>
+            <Text style={[styles.backArrow, { color: colors.text }]}>←</Text>
+          </View>
+        </PressableScale>
+        <View style={{ flex: 1 }} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Цели</Text>
-          <Text style={[styles.subtitle, { color: colors.icon }]}>Давайте настроим приложение под ваши цели</Text>
+          <Text style={[styles.subtitle, { color: colors.icon }]}>
+            Давайте настроим приложение под ваши цели
+          </Text>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.goalsContainer}>
-            {GOALS.map((goalOption) => (
-              <OptionCard
-                key={goalOption.id}
-                title={goalOption.title}
-                description={goalOption.description}
-                selected={goal === goalOption.id}
-                onPress={() => setGoal(goalOption.id)}
-                icon={<Text style={styles.icon}>{goalOption.icon}</Text>}
-              />
-            ))}
-          </View>
+        <View style={styles.grid}>
+          {GOALS.map((item, index) => {
+            const isSelected = goal === item.id;
+            const bgColor = hexToRgba(item.color, 0.3);
+            const borderColor = hexToRgba(item.color, 0.7);
+            const isRight = index % 2 === 1;
 
-          <View style={styles.ctaWrap}>
-            <Button
-              title="Далее"
-              onPress={handleNext}
-              disabled={!goal}
-            />
-          </View>
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.card,
+                  {
+                    width: CARD_WIDTH,
+                    marginBottom: CARD_GAP,
+                    backgroundColor: isSelected ? item.color : bgColor,
+                    borderColor: isSelected ? item.color : borderColor,
+                    borderWidth: isSelected ? 2 : 1.5,
+                  },
+                  isRight && { marginLeft: CARD_GAP },
+                ]}
+                onPress={() => handleSelect(item.id)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.cardContent}>
+                  <View style={styles.iconWrap}>
+                    <MaterialIcons
+                      name={item.iconName}
+                      size={32}
+                      color={isSelected ? '#FFFFFF' : item.color}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      { color: isSelected ? '#FFFFFF' : item.color },
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -80,43 +186,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: PADDING,
+    paddingTop: 60,
+    paddingBottom: 8,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  backArrow: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 22,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: PADDING,
+  },
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
-    padding: 20,
-    flexGrow: 1,
+    paddingHorizontal: PADDING,
+    paddingBottom: 40,
   },
   header: {
     marginBottom: 24,
   },
   title: {
-    ...Typography.display,
+    fontFamily: fontFamily('bold'),
+    fontSize: 28,
+    lineHeight: 34,
     marginBottom: 8,
   },
   subtitle: {
-    ...Typography.body,
+    fontFamily: fontFamily('regular'),
+    fontSize: 16,
+    lineHeight: 24,
   },
-  goalsContainer: {
-    marginBottom: 24,
-  },
-  icon: {
-    fontSize: 32,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   card: {
-    borderRadius: 16,
-    borderWidth: 0,
-    backgroundColor: '#FAFBF7',
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
-    marginBottom: 18,
+    maxWidth: 165,
+    aspectRatio: 1,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
   },
-  ctaWrap: {
-    position: 'relative',
-    marginTop: 6,
+  cardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  footer: {
-    marginTop: 'auto',
+  iconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });

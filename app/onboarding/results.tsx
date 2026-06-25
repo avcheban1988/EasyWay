@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { MacrosDisplay } from '@/components/ui/macros-display';
-import { Colors, Typography } from '@/constants/theme';
+import { Colors, fontFamily, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUserStore } from '@/store/userStore';
 import { useRouter } from 'expo-router';
@@ -47,7 +46,27 @@ export default function ResultsScreen() {
         </View>
 
         <View style={styles.card}>
-          <MacrosDisplay macros={dailyMacros} />
+          {/* Калории крупно */}
+          <View style={styles.caloriesBlock}>
+            <Text style={styles.caloriesValue}>{dailyMacros.calories}</Text>
+            <Text style={styles.caloriesUnit}>ккал</Text>
+          </View>
+
+          {/* БЖУ цифрами с цветами */}
+          <View style={styles.macrosRow}>
+            <View style={styles.macroCol}>
+              <Text style={[styles.macroNumber, { color: '#53B175' }]}>{dailyMacros.proteins}</Text>
+              <Text style={[styles.macroLabelSmall, { color: '#53B175' }]}>белки</Text>
+            </View>
+            <View style={styles.macroCol}>
+              <Text style={[styles.macroNumber, { color: '#F7A593' }]}>{dailyMacros.fats}</Text>
+              <Text style={[styles.macroLabelSmall, { color: '#F7A593' }]}>жиры</Text>
+            </View>
+            <View style={styles.macroCol}>
+              <Text style={[styles.macroNumber, { color: '#F8A44C' }]}>{dailyMacros.carbs}</Text>
+              <Text style={[styles.macroLabelSmall, { color: '#F8A44C' }]}>угли</Text>
+            </View>
+          </View>
 
           <View style={styles.infoSection}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>
@@ -132,5 +151,42 @@ const styles = StyleSheet.create({
   ctaWrap: {
     position: 'relative',
     marginTop: 6,
+  },
+  caloriesBlock: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    backgroundColor: '#53B175',
+    borderRadius: 14,
+    marginBottom: 20,
+  },
+  caloriesValue: {
+    fontFamily: fontFamily('extraBold'),
+    fontSize: 48,
+    color: '#fff',
+    lineHeight: 56,
+  },
+  caloriesUnit: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
+  },
+  macrosRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  macroCol: {
+    alignItems: 'center',
+  },
+  macroNumber: {
+    fontFamily: fontFamily('bold'),
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  macroLabelSmall: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 12,
+    marginTop: 2,
   },
 });

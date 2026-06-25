@@ -261,8 +261,8 @@ export default function AuthScreen() {
                       label=""
                       value={phoneDisplay}
                       onChangeText={(t) => {
-                        // keep only digits in internal state
-                        const d = t.replace(/\D/g, '');
+                        // keep only digits in internal state, max 11 (1 для кода + 10 для номера)
+                        const d = t.replace(/\D/g, '').slice(0, 11);
                         setPhoneRaw(d);
                       }}
                       keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}

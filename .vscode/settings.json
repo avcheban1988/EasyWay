@@ -4,5 +4,9 @@
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
   },
-  "Codegeex.RepoIndex": true
+  "Codegeex.RepoIndex": true,
+  "chat.tools.terminal.autoApprove": {
+    "npx expo": true,
+    "npx tsc": true
+  }
 }

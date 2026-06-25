@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
 import { useUserStore } from '@/store/userStore';
 import { useWeightStore } from '@/store/weightStore';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated,
@@ -61,10 +62,11 @@ export function SummaryCard() {
   }, [expanded, helpAnimatedOnce, helpPulse]);
 
   const name = useMemo(() => {
+    if (userProfile.name?.trim()) return userProfile.name.trim();
     if (!account?.email) return 'друг';
     const part = account.email.split('@')[0];
     return part.charAt(0).toUpperCase() + part.slice(1);
-  }, [account]);
+  }, [account, userProfile.name]);
 
   // compute last 7 days sums for macros
   const weekSums = useMemo(() => {
@@ -103,7 +105,7 @@ export function SummaryCard() {
 
   const animHeight = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [140, 320],
+    outputRange: [175, 260],
   });
 
   const daysUsed = useMemo(() => {
@@ -175,7 +177,7 @@ export function SummaryCard() {
               {/** collapsed order: show bottom stats first, then compact bars */}
               <View style={styles.bottomRow}> 
                 <View style={styles.statItemLeft}>
-                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Ты с нами уже <Text style={[styles.highlight, { color: colors.tint }]}>{daysUsed}</Text> {daysLabel}</Text>
+                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Результаты недели</Text>
                 </View>
                 <TouchableOpacity style={styles.statItemRight} onPress={() => setInfoOpen(true)}>
                   <Text style={[styles.statTextItalic, { color: colors.icon }]}>Вес: <Text style={[styles.highlight, { color: colors.tint }]}>{latestWeight ?? '—'} kg</Text>{latestWeight !== null && prevWeight !== undefined ? <Text style={{ color: colors.icon }}> ({weightDelta > 0 ? '+' : ''}{weightDelta} kg)</Text> : null}</Text>
@@ -230,7 +232,7 @@ export function SummaryCard() {
 
               <View style={styles.bottomRow}>
                 <View style={styles.statItemLeft}>
-                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Ты с нами уже <Text style={[styles.highlight, { color: colors.tint }]}>{daysUsed}</Text> {daysLabel}</Text>
+                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Результаты недели</Text>
                 </View>
                 <TouchableOpacity style={styles.statItemRight} onPress={() => setInfoOpen(true)}>
                   <Text style={[styles.statTextItalic, { color: colors.icon }]}>Вес: <Text style={[styles.highlight, { color: colors.tint }]}>{latestWeight ?? '—'} kg</Text>{latestWeight !== null && prevWeight !== undefined ? <Text style={{ color: colors.icon }}> ({weightDelta > 0 ? '+' : ''}{weightDelta} kg)</Text> : null}</Text>
@@ -238,6 +240,28 @@ export function SummaryCard() {
               </View>
             </>
           )}
+        </TouchableOpacity>
+
+        {/* Анимированная стрелка */}
+        <TouchableOpacity
+          onPress={() => setExpanded((v) => !v)}
+          style={styles.chevronWrap}
+          activeOpacity={0.7}
+        >
+          <Animated.View
+            style={{
+              transform: [
+                {
+                  rotate: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '180deg'],
+                  }),
+                },
+              ],
+            }}
+          >
+            <MaterialIcons name="expand-more" size={28} color={colors.icon} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -259,11 +283,8 @@ export function SummaryCard() {
       </InfoModal>
 
       <InfoModal visible={helpOpen} onClose={() => setHelpOpen(false)} title="О недельных целях">
-        <Text style={{ ...Typography.body, marginBottom: 8, color: colors.text }}>
-          Здесь показывается суммарное количество углеводов, белков и жиров за последние 7 дней. Цель — приблизиться к недельной норме (сумма дневных целей × 7). Если в какой-то день вы переели или недоели — не переживайте: важна общая картина к концу недели.
-        </Text>
         <Text style={{ ...Typography.body, color: colors.text }}>
-          Нажмите на полосу, чтобы развернуть подробности и увидеть сколько съедено и сколько осталось до недельной цели.
+          Здесь показывается суммарное количество углеводов, белков и жиров за последние 7 дней. Цель — приблизиться к недельной норме (сумма дневных целей × 7). Если в какой-то день вы переели или недоели — не переживайте: важна общая картина к концу недели.
         </Text>
       </InfoModal>
     </Animated.View>
@@ -275,7 +296,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 16,
   },
   topRow: {
@@ -413,6 +433,11 @@ const styles = StyleSheet.create({
   statValue: {
     ...Typography.bodySemiBold,
     marginTop: 4,
+  },
+  chevronWrap: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginTop: -4,
   },
 });
 

@@ -10,6 +10,7 @@ export default function OnboardingLayout() {
     >
       <Stack.Screen name="auth" />
       <Stack.Screen name="goal" />
+      <Stack.Screen name="manual-macros" />
       <Stack.Screen name="anthropometry" />
       <Stack.Screen name="activity" />
       <Stack.Screen name="gym-frequency" />

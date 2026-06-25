@@ -1,14 +1,15 @@
-import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
 
 // Типы для хранения пользовательских данных
-export type GoalType = 'lose' | 'maintain' | 'gain';
+export type GoalType = 'lose' | 'maintain' | 'gain' | 'manual';
 
 export type GenderType = 'male' | 'female';
 
 export type ActivityLevelType = 'minimal' | 'light' | 'moderate' | 'high' | 'extreme';
 
 export interface UserProfile {
+  name: string;
   goal: GoalType | null;
   gender: GenderType | null;
   age: number | null;
@@ -18,6 +19,9 @@ export interface UserProfile {
   gymDaysPerWeek: number | null;
   isMassGainMode: boolean;
   isOnboarded: boolean;
+  manualProteins: number | null;
+  manualFats: number | null;
+  manualCarbs: number | null;
 }
 
 export interface DailyMacros {
@@ -33,6 +37,7 @@ interface UserStore {
   dailyMacros: DailyMacros | null;
   profileHydrated: boolean;
   setGoal: (goal: GoalType) => void;
+  setName: (name: string) => void;
   setGender: (gender: GenderType) => void;
   setAge: (age: number) => void;
   setHeight: (height: number) => void;
@@ -41,6 +46,7 @@ interface UserStore {
   setGymDaysPerWeek: (days: number) => void;
   setMassGainMode: (enabled: boolean) => void;
   setIsOnboarded: (isOnboarded: boolean) => void;
+  setManualMacros: (proteins: number, fats: number, carbs: number) => void;
   calculateMacros: () => void;
   resetProfile: () => void;
   loadProfile: (email?: string | null) => Promise<void>;
@@ -48,6 +54,7 @@ interface UserStore {
 }
 
 const defaultProfile: UserProfile = {
+  name: '',
   goal: null,
   gender: null,
   age: null,
@@ -57,6 +64,9 @@ const defaultProfile: UserProfile = {
   gymDaysPerWeek: null,
   isMassGainMode: false,
   isOnboarded: false,
+  manualProteins: null,
+  manualFats: null,
+  manualCarbs: null,
 };
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -71,6 +81,10 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
   setGender: (gender) => set((state) => ({
     userProfile: { ...state.userProfile, gender }
+  })),
+
+  setName: (name) => set((state) => ({
+    userProfile: { ...state.userProfile, name }
   })),
 
   setAge: (age) => set((state) => ({
@@ -95,6 +109,21 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
   setMassGainMode: (isMassGainMode) => set((state) => ({
     userProfile: { ...state.userProfile, isMassGainMode }
+  })),
+
+  setManualMacros: (proteins, fats, carbs) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      manualProteins: proteins,
+      manualFats: fats,
+      manualCarbs: carbs,
+    },
+    dailyMacros: {
+      calories: proteins * 4 + fats * 9 + carbs * 4,
+      proteins,
+      fats,
+      carbs,
+    },
   })),
 
   setIsOnboarded: (isOnboarded) => set((state) => ({

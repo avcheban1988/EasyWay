@@ -1,47 +1,76 @@
-import { Colors, Shadows, Typography } from '@/constants/theme';
+import { Colors, Shadows, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DailyMacros } from '@/store/userStore';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
 interface MacrosDisplayProps {
   macros: DailyMacros;
+  todayTotals?: DailyMacros;
 }
 
-export function MacrosDisplay({ macros }: MacrosDisplayProps) {
+const BAR_COLORS = {
+  calories: '#D3B0E0',
+  proteins: '#53B175',
+  fats: '#F7A593',
+  carbs: '#F8A44C',
+};
+
+export function MacrosDisplay({ macros, todayTotals }: MacrosDisplayProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
+  const totals = todayTotals ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
+
+  const calAnim = useRef(new Animated.Value(0)).current;
+  const protAnim = useRef(new Animated.Value(0)).current;
+  const fatAnim = useRef(new Animated.Value(0)).current;
+  const carbAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const duration = 800;
+    Animated.parallel([
+      Animated.timing(calAnim, { toValue: Math.min(1, totals.calories / Math.max(1, macros.calories)), duration, useNativeDriver: false }),
+      Animated.timing(protAnim, { toValue: Math.min(1, totals.proteins / Math.max(1, macros.proteins)), duration, useNativeDriver: false }),
+      Animated.timing(fatAnim, { toValue: Math.min(1, totals.fats / Math.max(1, macros.fats)), duration, useNativeDriver: false }),
+      Animated.timing(carbAnim, { toValue: Math.min(1, totals.carbs / Math.max(1, macros.carbs)), duration, useNativeDriver: false }),
+    ]).start();
+  }, [totals, macros, calAnim, protAnim, fatAnim, carbAnim]);
+
+  const bars = [
+    { key: 'calories', label: 'Калории', eaten: totals.calories, target: macros.calories, anim: calAnim, color: BAR_COLORS.calories, big: true, unit: 'ккал' },
+    { key: 'proteins', label: 'Белки', eaten: totals.proteins, target: macros.proteins, anim: protAnim, color: BAR_COLORS.proteins, big: false, unit: 'г' },
+    { key: 'fats', label: 'Жиры', eaten: totals.fats, target: macros.fats, anim: fatAnim, color: BAR_COLORS.fats, big: false, unit: 'г' },
+    { key: 'carbs', label: 'Углеводы', eaten: totals.carbs, target: macros.carbs, anim: carbAnim, color: BAR_COLORS.carbs, big: false, unit: 'г' },
+  ];
+
   return (
     <View style={[styles.container, Shadows.cardSoft, { backgroundColor: colors.cardNested, borderColor: colors.border }]}>
-      <View style={[styles.caloriesContainer, { backgroundColor: colors.tint }]}>
-        <Text style={styles.caloriesLabel}>Твоя норма</Text>
-        <Text style={styles.caloriesValue}>{macros.calories}</Text>
-        <Text style={styles.caloriesUnit}>ккал</Text>
-      </View>
-
-      <View style={styles.macrosContainer}>
-        <View style={styles.macroItem}>
-          <Text style={[styles.macroLabel, { color: colors.icon }]}>Белки</Text>
-          <Text style={[styles.macroValue, { color: colors.text }]}>
-            {macros.proteins} <Text style={styles.macroUnit}>г</Text>
-          </Text>
+      {bars.map((bar) => (
+        <View key={bar.key} style={[styles.barWrap, bar.big && styles.bigBarWrap]}>
+          <View style={styles.barHeader}>
+            <Text style={[styles.barLabel, { color: colors.text }]}>{bar.label}</Text>
+            <Text style={[styles.barCount, { color: colors.icon }]}>
+              {bar.eaten} / {bar.target} {bar.unit}
+            </Text>
+          </View>
+          <View style={[styles.barTrack, bar.big && styles.bigBarTrack]}>
+            <Animated.View
+              style={[
+                styles.barFill,
+                bar.big ? styles.bigBarFill : styles.smallBarFill,
+                {
+                  backgroundColor: bar.color,
+                  width: bar.anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
         </View>
-
-        <View style={styles.macroItem}>
-          <Text style={[styles.macroLabel, { color: colors.icon }]}>Жиры</Text>
-          <Text style={[styles.macroValue, { color: colors.text }]}>
-            {macros.fats} <Text style={styles.macroUnit}>г</Text>
-          </Text>
-        </View>
-
-        <View style={styles.macroItem}>
-          <Text style={[styles.macroLabel, { color: colors.icon }]}>Углеводы</Text>
-          <Text style={[styles.macroValue, { color: colors.text }]}>
-            {macros.carbs} <Text style={styles.macroUnit}>г</Text>
-          </Text>
-        </View>
-      </View>
+      ))}
     </View>
   );
 }
@@ -53,44 +82,43 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
   },
-  caloriesContainer: {
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
+  barWrap: {
+    marginBottom: 14,
+  },
+  bigBarWrap: {
     marginBottom: 20,
   },
-  caloriesLabel: {
-    ...Typography.label,
-    color: '#fff',
-    marginBottom: 8,
-  },
-  caloriesValue: {
-    ...Typography.stat,
-    color: '#fff',
-    fontSize: 44,
-    lineHeight: 48,
-  },
-  caloriesUnit: {
-    ...Typography.label,
-    color: '#fff',
-  },
-  macrosContainer: {
+  barHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  macroItem: {
-    alignItems: 'center',
+  barLabel: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 14,
   },
-  macroLabel: {
-    ...Typography.label,
-    marginBottom: 4,
+  barCount: {
+    fontFamily: fontFamily('regular'),
+    fontSize: 13,
   },
-  macroValue: {
-    ...Typography.headline,
-    fontSize: 24,
-    lineHeight: 28,
+  barTrack: {
+    height: 10,
+    backgroundColor: '#F0F3F7',
+    borderRadius: 6,
+    overflow: 'hidden',
   },
-  macroUnit: {
-    ...Typography.label,
+  bigBarTrack: {
+    height: 18,
+    borderRadius: 9,
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 6,
+  },
+  bigBarFill: {
+    borderRadius: 9,
+  },
+  smallBarFill: {
+    borderRadius: 6,
   },
 });
