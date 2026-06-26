@@ -58,6 +58,7 @@ export default function AddFoodScreen() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [portions, setPortions] = useState('1');
   const [grams, setGrams] = useState('');
+  const [addedFeedback, setAddedFeedback] = useState(false);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
@@ -144,7 +145,16 @@ export default function AddFoodScreen() {
       carbs: Math.round(selectedProduct.carbsPer100 * mult * count * 10) / 10,
       date: params.date,
     });
-    router.back();
+    setAddedFeedback(true);
+    setTimeout(() => {
+      // Сбрасываем выбор, чтобы можно было добавить ещё продукты
+      setSelectedProduct(null);
+      setPortions('1');
+      setGrams('');
+      setSearchQuery('');
+      setResults([]);
+      setAddedFeedback(false);
+    }, 800);
   };
 
   const macrosForSelected = useMemo(() => {
@@ -308,9 +318,14 @@ export default function AddFoodScreen() {
             </View>
           )}
 
-          <TouchableOpacity style={[styles.addDiaryBtn, { backgroundColor: colors.primary }]} onPress={handleAddToDiary} activeOpacity={0.85}>
-            <MaterialIcons name="add" size={20} color="#fff" />
-            <Text style={styles.addDiaryText}>Добавить в дневник</Text>
+          <TouchableOpacity
+            style={[styles.addDiaryBtn, { backgroundColor: addedFeedback ? '#3D8C54' : colors.primary }]}
+            onPress={handleAddToDiary}
+            activeOpacity={0.85}
+            disabled={addedFeedback}
+          >
+            <MaterialIcons name={addedFeedback ? 'check-circle' : 'add'} size={20} color="#fff" />
+            <Text style={styles.addDiaryText}>{addedFeedback ? 'Добавлено' : 'Добавить в дневник'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -318,7 +333,7 @@ export default function AddFoodScreen() {
 {/* Форма ручного добавления (рендерится внутри блока «ничего не найдено») */}
 
       <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => router.back()} activeOpacity={0.85}>
-        <Text style={[styles.cancelText, { color: colors.icon }]}>Отмена</Text>
+        <Text style={[styles.cancelText, { color: colors.icon }]}>Готово</Text>
       </TouchableOpacity>
     </ScrollView>
   );

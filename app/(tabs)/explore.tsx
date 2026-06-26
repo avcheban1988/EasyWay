@@ -6,7 +6,7 @@ import { Recipe, useProductStore } from '@/store/productStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -42,6 +42,8 @@ export default function ExploreScreen() {
 
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
+  const [favAddProduct, setFavAddProduct] = useState<{ id: string; name: string; caloriesPer100: number; proteinsPer100: number; fatsPer100: number; carbsPer100: number; packageGrams?: number } | null>(null);
+  const [favAddGrams, setFavAddGrams] = useState('100');
 
   useEffect(() => {
     if (!toastMsg) return;
@@ -86,7 +88,7 @@ export default function ExploreScreen() {
             <Text style={[styles.emptyText, { color: colors.icon }]}>Нет избранных продуктов</Text>
           ) : (
             favoriteProducts.map((p) => (
-              <View key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
                 <View style={styles.productInfo}>
                   <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
                   <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
@@ -94,7 +96,7 @@ export default function ExploreScreen() {
                 <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
                   <MaterialIcons name="star" size={22} color="#F8A44C" />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -170,6 +172,60 @@ export default function ExploreScreen() {
         </View>
       </ScrollView>
 
+      {/* Модалка добавления избранного продукта */}
+      {favAddProduct && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{favAddProduct.name}</Text>
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Вес (грамм):</Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              keyboardType="numeric"
+              value={favAddGrams}
+              onChangeText={(v) => setFavAddGrams(v.replace(/[^0-9.]/g, ''))}
+              autoFocus
+              selectTextOnFocus
+            />
+            {favAddProduct.packageGrams && (
+              <TouchableOpacity onPress={() => setFavAddGrams(favAddProduct.packageGrams!.toString())}>
+                <Text style={[styles.packageHint, { color: colors.primary }]}>уп. {favAddProduct.packageGrams}г</Text>
+              </TouchableOpacity>
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
+                onPress={() => {
+                  if (favAddProduct) {
+                    const qty = Number(favAddGrams) || 100;
+                    const mult = qty / 100;
+                    addFoodEntry({
+                      mealType: 'Завтрак',
+                      name: favAddProduct.name,
+                      calories: Math.round(favAddProduct.caloriesPer100 * mult),
+                      proteins: Math.round(favAddProduct.proteinsPer100 * mult * 10) / 10,
+                      fats: Math.round(favAddProduct.fatsPer100 * mult * 10) / 10,
+                      carbs: Math.round(favAddProduct.carbsPer100 * mult * 10) / 10,
+                    });
+                    setToastMsg(`«${favAddProduct.name}» добавлен в дневник`);
+                  }
+                  setFavAddProduct(null);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Добавить</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#E53935' }]}
+                onPress={() => setFavAddProduct(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
       {toastMsg !== '' && (
         <Animated.View style={[styles.toast, { opacity: toastOpacity, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
           <Text style={styles.toastText}>{toastMsg}</Text>
@@ -213,4 +269,22 @@ const styles = StyleSheet.create({
   recipeItemContent: { flex: 1, marginRight: 8 },
   recipeActions: { flexDirection: 'row', gap: 6 },
   actionBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  packageHint: { fontFamily: fontFamily('semiBold'), fontSize: 12, textAlign: 'center', marginTop: 4 },
+
+  // Модалка
+  modalOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+  },
+  modalContent: { width: '85%', borderRadius: 16, borderWidth: 1, padding: 24 },
+  modalTitle: { fontFamily: fontFamily('bold'), fontSize: 18, marginBottom: 16 },
+  modalLabel: { fontFamily: fontFamily('regular'), fontSize: 14, marginBottom: 8 },
+  modalInput: {
+    fontFamily: fontFamily('regular'), fontSize: 18,
+    padding: 12, borderWidth: 1, borderRadius: 10,
+    textAlign: 'center', marginBottom: 20,
+  },
+  modalButtons: { flexDirection: 'row', gap: 10 },
+  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  modalBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' },
 });

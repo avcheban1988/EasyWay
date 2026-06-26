@@ -53,6 +53,10 @@ export default function HomeScreen() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
+  const [editModalMeal, setEditModalMeal] = useState<{ id: string; mealType: string; name: string; proteins: number; fats: number; carbs: number; calories: number } | null>(null);
+  const [editModalGrams, setEditModalGrams] = useState('100');
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [dateModalValue, setDateModalValue] = useState('');
 
   useEffect(() => {
     if (!rootNavigationState?.key) return;
@@ -90,12 +94,8 @@ export default function HomeScreen() {
     if (Platform.OS === 'web') {
       setShowCalendar(true);
     } else {
-      // На native просим ввести дату
-      const d = prompt?.('Введите дату (ГГГГ-ММ-ДД):', selectedDate);
-      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
-        if (!hasEntries) setToastMsg('В этот день записей не было');
-        setSelectedDate(d);
-      }
+      setDateModalValue(selectedDate);
+      setDateModalVisible(true);
     }
   };
 
@@ -210,20 +210,8 @@ export default function HomeScreen() {
                         </View>
                         <View style={styles.mealActions}>
                           <TouchableOpacity onPress={() => {
-                            const val = prompt?.('Новый вес (грамм):', '100');
-                            if (val) {
-                              const ratio = Number(val) / 100;
-                              const old = {
-                                mealType: meal.mealType,
-                                name: meal.name,
-                                calories: Math.round(meal.calories / (meal.proteins || 1) * (meal.proteins || 1) * ratio),
-                                proteins: Math.round(meal.proteins * ratio * 10) / 10,
-                                fats: Math.round(meal.fats * ratio * 10) / 10,
-                                carbs: Math.round(meal.carbs * ratio * 10) / 10,
-                              };
-                              removeFoodEntry(meal.id);
-                              addFoodEntry({ ...old, date: selectedDate });
-                            }
+                            setEditModalGrams('100');
+                            setEditModalMeal(meal);
                           }} style={styles.mealAction} activeOpacity={0.7}>
                             <MaterialIcons name="edit" size={16} color={colors.icon} />
                           </TouchableOpacity>
@@ -256,6 +244,98 @@ export default function HomeScreen() {
         <Animated.View style={[styles.toast, { opacity: toastOpacity, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
           <Text style={styles.toastText}>{toastMsg}</Text>
         </Animated.View>
+      )}
+
+      {/* Модалка выбора даты (native) */}
+      {dateModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Введите дату</Text>
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Формат: ГГГГ-ММ-ДД</Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder="2026-06-26"
+              placeholderTextColor={colors.icon}
+              value={dateModalValue}
+              onChangeText={setDateModalValue}
+              autoFocus
+              selectTextOnFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
+                onPress={() => {
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateModalValue)) {
+                    const entries = getEntriesForDate(dateModalValue);
+                    if (entries.length === 0) setToastMsg('В этот день записей не было');
+                    setSelectedDate(dateModalValue);
+                  }
+                  setDateModalVisible(false);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Выбрать</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#E53935' }]}
+                onPress={() => setDateModalVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Модалка изменения веса порции (кросс-платформенная) */}
+      {editModalMeal && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{editModalMeal.name}</Text>
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Новый вес (грамм):</Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              keyboardType="numeric"
+              value={editModalGrams}
+              onChangeText={(v) => setEditModalGrams(v.replace(/[^0-9.]/g, ''))}
+              autoFocus
+              selectTextOnFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
+                onPress={() => {
+                  const val = editModalGrams;
+                  const ratio = Number(val) / 100;
+                  if (ratio > 0 && editModalMeal) {
+                    const old = {
+                      mealType: editModalMeal.mealType,
+                      name: editModalMeal.name,
+                      calories: Math.round(editModalMeal.calories / (editModalMeal.proteins || 1) * (editModalMeal.proteins || 1) * ratio),
+                      proteins: Math.round(editModalMeal.proteins * ratio * 10) / 10,
+                      fats: Math.round(editModalMeal.fats * ratio * 10) / 10,
+                      carbs: Math.round(editModalMeal.carbs * ratio * 10) / 10,
+                    };
+                    removeFoodEntry(editModalMeal.id);
+                    addFoodEntry({ ...old, date: selectedDate });
+                  }
+                  setEditModalMeal(null);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Сохранить</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#E53935' }]}
+                onPress={() => setEditModalMeal(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
     </MainTabBackground>
   );
@@ -352,6 +432,56 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: fontFamily('semiBold'),
     fontSize: 14,
+    color: '#fff',
+  },
+
+  // Модалка изменения веса
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    width: '85%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+  },
+  modalTitle: {
+    fontFamily: fontFamily('bold'),
+    fontSize: 18,
+    marginBottom: 16,
+  },
+  modalLabel: {
+    fontFamily: fontFamily('regular'),
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  modalInput: {
+    fontFamily: fontFamily('regular'),
+    fontSize: 18,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontFamily: fontFamily('semiBold'),
+    fontSize: 15,
     color: '#fff',
   },
 });

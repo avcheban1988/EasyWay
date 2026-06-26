@@ -40,8 +40,16 @@ export const useWeightStore = create<WeightStore>((set, get) => ({
   addEntry: async (weight, date) => {
     try {
       const d = date ?? new Date().toISOString().slice(0, 10);
-      const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, date: d, weight };
-      const newArr = [entry, ...get().entries].sort((a, b) => (a.date < b.date ? 1 : -1));
+      const existing = get().entries.find((e) => e.date === d);
+      let newArr: WeightEntry[];
+      if (existing) {
+        // Перезаписываем существующую запись за этот день
+        newArr = get().entries.map((e) => e.id === existing.id ? { ...e, weight } : e);
+      } else {
+        const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, date: d, weight };
+        newArr = [entry, ...get().entries];
+      }
+      newArr.sort((a, b) => (a.date < b.date ? 1 : -1));
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newArr));
       set({ entries: newArr });
     } catch (e) {

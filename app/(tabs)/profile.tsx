@@ -59,6 +59,9 @@ export default function ProfileScreen() {
   const [localHeight, setLocalHeight] = useState(userProfile.height?.toString() ?? '170');
   const [localWeight, setLocalWeight] = useState(userProfile.weight?.toString() ?? '70');
   const [localActivity, setLocalActivity] = useState(userProfile.activityLevel || 'moderate');
+  const [localManualProteins, setLocalManualProteins] = useState(userProfile.manualProteins?.toString() ?? '');
+  const [localManualFats, setLocalManualFats] = useState(userProfile.manualFats?.toString() ?? '');
+  const [localManualCarbs, setLocalManualCarbs] = useState(userProfile.manualCarbs?.toString() ?? '');
 
   const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
@@ -92,6 +95,9 @@ export default function ProfileScreen() {
     setLocalHeight(userProfile.height?.toString() ?? '170');
     setLocalWeight(userProfile.weight?.toString() ?? '70');
     setLocalActivity(userProfile.activityLevel || 'moderate');
+    setLocalManualProteins(userProfile.manualProteins?.toString() ?? '');
+    setLocalManualFats(userProfile.manualFats?.toString() ?? '');
+    setLocalManualCarbs(userProfile.manualCarbs?.toString() ?? '');
   }, [userProfile]);
 
   useEffect(() => {
@@ -122,12 +128,18 @@ export default function ProfileScreen() {
           s.setHeight(Number(localHeight));
           s.setWeight(Number(localWeight));
           s.setActivityLevel(localActivity);
+          if (localGoal === 'manual') {
+            const p = Number(localManualProteins) || 0;
+            const f = Number(localManualFats) || 0;
+            const c = Number(localManualCarbs) || 0;
+            if (p && f && c) s.setManualMacros(p, f, c);
+          }
         }, 600);
       };
     })(),
   ).current;
 
-  useEffect(() => { autoSave(); }, [localName, localGoal, localGender, localAge, localHeight, localWeight, localActivity, autoSave]);
+  useEffect(() => { autoSave(); }, [localName, localGoal, localGender, localAge, localHeight, localWeight, localActivity, localManualProteins, localManualFats, localManualCarbs, autoSave]);
 
   const handleRecalculate = () => {
     const s = useUserStore.getState();
@@ -137,8 +149,16 @@ export default function ProfileScreen() {
     s.setHeight(Number(localHeight));
     s.setWeight(Number(localWeight));
     s.setActivityLevel(localActivity);
-    s.calculateMacros();
+    if (localGoal === 'manual') {
+      const p = Number(localManualProteins) || 0;
+      const f = Number(localManualFats) || 0;
+      const c = Number(localManualCarbs) || 0;
+      if (p && f && c) s.setManualMacros(p, f, c);
+    } else {
+      s.calculateMacros();
+    }
     s.saveProfile();
+    setParamsExpanded(false);
     const fresh = useUserStore.getState().dailyMacros;
     if (fresh) {
       Alert.alert('Новая норма', `Калории: ${fresh.calories} ккал\nБелки: ${fresh.proteins} г\nЖиры: ${fresh.fats} г\nУглеводы: ${fresh.carbs} г`);
@@ -265,22 +285,68 @@ export default function ProfileScreen() {
 
           {!paramsExpanded ? (
             <View style={styles.paramsSummary}>
-              <View style={styles.paramChip}>
-                <Text style={[styles.paramChipValue, { color: colors.text }]}>{genderLabel}</Text>
-              </View>
-              <View style={styles.paramChip}>
-                <Text style={[styles.paramChipValue, { color: colors.text }]}>{localAge} лет</Text>
-              </View>
-              <View style={styles.paramChip}>
-                <Text style={[styles.paramChipValue, { color: colors.text }]}>{localHeight} см</Text>
-              </View>
-              <View style={styles.paramChip}>
-                <Text style={[styles.paramChipValue, { color: colors.text }]}>{localWeight} кг</Text>
-              </View>
-              <View style={styles.paramChip}>
-                <Text style={[styles.paramChipValue, { color: colors.text }]}>{ACTIVITY_LEVELS.find((a) => a.id === localActivity)?.title ?? '—'}</Text>
-              </View>
+              {localGoal === 'manual' ? (
+                <>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>Б: {localManualProteins || '—'} г</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>Ж: {localManualFats || '—'} г</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>У: {localManualCarbs || '—'} г</Text>
+                  </View>
+                  {localManualProteins && localManualFats && localManualCarbs && (
+                    <View style={styles.paramChip}>
+                      <Text style={[styles.paramChipValue, { color: '#D3B0E0' }]}>
+                        ~{Number(localManualProteins || 0) * 4 + Number(localManualFats || 0) * 9 + Number(localManualCarbs || 0) * 4} ккал
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>{genderLabel}</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>{localAge} лет</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>{localHeight} см</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>{localWeight} кг</Text>
+                  </View>
+                  <View style={styles.paramChip}>
+                    <Text style={[styles.paramChipValue, { color: colors.text }]}>{ACTIVITY_LEVELS.find((a) => a.id === localActivity)?.title ?? '—'}</Text>
+                  </View>
+                </>
+              )}
             </View>
+          ) : localGoal === 'manual' ? (
+            <>
+              <Text style={[styles.sectionTitle, { color: '#D3B0E0' }]}>Свои БЖУ (на день)</Text>
+              <View style={[styles.colorField, { borderLeftColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.08) }]}>
+                <Text style={[styles.fieldLabel, { color: '#53B175' }]}>Белки (г)</Text>
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localManualProteins} onChangeText={(v) => setLocalManualProteins(v.replace(/[^0-9.]/g, ''))} />
+              </View>
+              <View style={[styles.colorField, { borderLeftColor: '#F8A44C', backgroundColor: hexToRgba('#F8A44C', 0.08) }]}>
+                <Text style={[styles.fieldLabel, { color: '#F8A44C' }]}>Жиры (г)</Text>
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localManualFats} onChangeText={(v) => setLocalManualFats(v.replace(/[^0-9.]/g, ''))} />
+              </View>
+              <View style={[styles.colorField, { borderLeftColor: '#F7A593', backgroundColor: hexToRgba('#F7A593', 0.08) }]}>
+                <Text style={[styles.fieldLabel, { color: '#F7A593' }]}>Углеводы (г)</Text>
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localManualCarbs} onChangeText={(v) => setLocalManualCarbs(v.replace(/[^0-9.]/g, ''))} />
+              </View>
+              {(localManualProteins || localManualFats || localManualCarbs) && (
+                <View style={[styles.autoCalories, { backgroundColor: hexToRgba('#D3B0E0', 0.1) }]}>
+                  <Text style={[styles.autoCaloriesText, { color: '#D3B0E0' }]}>
+                    ~ {Number(localManualProteins || 0) * 4 + Number(localManualFats || 0) * 9 + Number(localManualCarbs || 0) * 4} ккал
+                  </Text>
+                </View>
+              )}
+            </>
           ) : (
             <>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Пол</Text>
@@ -555,4 +621,6 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: fontFamily('regular'), fontSize: 14 },
   recalcBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },
   recalcBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#fff' },
+  autoCalories: { borderRadius: 8, padding: 8, alignItems: 'center', marginBottom: 8 },
+  autoCaloriesText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
 });
