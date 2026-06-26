@@ -6,7 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Platform,
+    Animated, Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -16,6 +16,14 @@ import {
 } from 'react-native';
 
 const MEAL_TYPES: MealType[] = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];
+
+function getDefaultMealType(): MealType {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 12) return 'Завтрак';
+  if (h >= 12 && h < 17) return 'Обед';
+  if (h >= 17 && h < 22) return 'Ужин';
+  return 'Перекус';
+}
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -30,9 +38,9 @@ export default function AddFoodScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { addFoodEntry } = useFoodStore();
-  const { products, searchProducts, addProduct, load: loadProducts } = useProductStore();
+  const { products, searchProducts, addProduct, toggleFavorite, favoriteIds, load: loadProducts } = useProductStore();
 
-  const [mealType, setMealType] = useState<MealType>('Завтрак');
+  const [mealType, setMealType] = useState<MealType>(getDefaultMealType());
   const [mode, setMode] = useState<'scan' | 'photo' | 'manual'>('manual');
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -103,6 +111,17 @@ export default function AddFoodScreen() {
       carbsPer100: c,
       packageGrams: Number(manualPackage) || undefined,
     });
+    // Создаём локальный объект продукта и сразу выбираем его
+    const localProduct: Product = {
+      id: `tmp-${Date.now()}`,
+      name: manualName.trim(),
+      caloriesPer100: p * 4 + f * 9 + c * 4,
+      proteinsPer100: p,
+      fatsPer100: f,
+      carbsPer100: c,
+      packageGrams: Number(manualPackage) || undefined,
+    };
+    setSelectedProduct(localProduct);
     setManualName('');
     setManualProt('');
     setManualFat('');
@@ -148,9 +167,9 @@ export default function AddFoodScreen() {
       <TextInput style={[styles.manualInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="Например: Творог 5%" placeholderTextColor={colors.icon} value={manualName} onChangeText={setManualName} />
       <Text style={[styles.manualHint, { color: colors.icon }]}>На 100 грамм (калории рассчитаются автоматически)</Text>
       <View style={styles.manualRow}>
-        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Белки, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualProt} onChangeText={setManualProt} /></View>
-        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Жиры, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualFat} onChangeText={setManualFat} /></View>
-        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Углеводы, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualCarb} onChangeText={setManualCarb} /></View>
+        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Белки, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualProt} onChangeText={(v) => setManualProt(v.replace(/[^0-9.]/g, ''))} /></View>
+        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Жиры, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualFat} onChangeText={(v) => setManualFat(v.replace(/[^0-9.]/g, ''))} /></View>
+        <View style={styles.manualField}><Text style={[styles.manualFieldLabel, { color: colors.icon }]}>Углеводы, г</Text><TextInput style={[styles.manualInputSmall, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={manualCarb} onChangeText={(v) => setManualCarb(v.replace(/[^0-9.]/g, ''))} /></View>
       </View>
       {(manualProt || manualFat || manualCarb) ? (
         <View style={[styles.autoCalories, { backgroundColor: colors.backgroundSoft }]}>
@@ -159,7 +178,7 @@ export default function AddFoodScreen() {
       ) : null}
       <Text style={[styles.manualHint, { color: colors.icon }]}>Вес порции / упаковки (необязательно)</Text>
       <View style={styles.manualInlineRow}>
-        <TextInput style={[styles.manualInputHalf, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="140" placeholderTextColor={colors.icon} keyboardType="numeric" value={manualPackage} onChangeText={setManualPackage} />
+        <TextInput style={[styles.manualInputHalf, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="140" placeholderTextColor={colors.icon} keyboardType="numeric" value={manualPackage} onChangeText={(v) => setManualPackage(v.replace(/[^0-9.]/g, ''))} />
         <Text style={[styles.manualUnit, { color: colors.icon }]}>грамм</Text>
       </View>
       <Text style={[styles.manualHint, { color: colors.icon }]}>Штрихкод (необязательно)</Text>
@@ -169,14 +188,14 @@ export default function AddFoodScreen() {
           <MaterialIcons name="qr-code-scanner" size={20} color="#53B175" />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={[styles.saveProductBtn, { backgroundColor: colors.primary }]} onPress={handleAddCustomProduct} activeOpacity={0.85} disabled={!manualName.trim()}>
+      <TouchableOpacity style={[styles.saveProductBtn, { backgroundColor: colors.primary, opacity: manualName.trim() ? 1 : 0.5 }]} onPress={handleAddCustomProduct} activeOpacity={0.85}>
         <Text style={styles.saveProductText}>Сохранить продукт</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
       {/* Тип приёма пищи */}
       <View style={styles.mealTypes}>
         {MEAL_TYPES.map((t) => (
@@ -220,7 +239,7 @@ export default function AddFoodScreen() {
       </View>
 
       {/* Результаты поиска */}
-      {results.length > 0 && !selectedProduct && (
+      {(results.length > 0 || (searchQuery.trim() && !searching)) && !selectedProduct && (
         <View style={styles.resultsList}>
           {results.map((p) => (
             <TouchableOpacity key={p.id} style={[styles.resultItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => handleSelectProduct(p)} activeOpacity={0.85}>
@@ -231,7 +250,12 @@ export default function AddFoodScreen() {
                   {p.packageGrams ? ` · уп. ${p.packageGrams}г` : ''}
                 </Text>
               </View>
-              <MaterialIcons name="add-circle-outline" size={24} color={colors.primary} />
+              <View style={styles.resultActions}>
+                <TouchableOpacity onPress={() => toggleFavorite(p.id)} style={styles.favBtn} activeOpacity={0.7}>
+                  <MaterialIcons name={favoriteIds.includes(p.id) ? 'star' : 'star-outline'} size={20} color={favoriteIds.includes(p.id) ? '#F8A44C' : colors.icon} />
+                </TouchableOpacity>
+                <MaterialIcons name="add-circle-outline" size={24} color={colors.primary} />
+              </View>
             </TouchableOpacity>
           ))}
           {searchQuery.trim() && results.length === 0 && !searching && (
@@ -263,11 +287,11 @@ export default function AddFoodScreen() {
           <View style={styles.portionRow}>
             <View style={styles.portionField}>
               <Text style={[styles.portionLabel, { color: colors.icon }]}>Кол-во</Text>
-              <TextInput style={[styles.portionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={portions} onChangeText={setPortions} />
+              <TextInput style={[styles.portionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={portions} onChangeText={(v) => setPortions(v.replace(/[^0-9.]/g, ''))} />
             </View>
             <View style={styles.portionField}>
               <Text style={[styles.portionLabel, { color: colors.icon }]}>Грамм</Text>
-              <TextInput style={[styles.portionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={grams} onChangeText={setGrams} />
+              <TextInput style={[styles.portionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={grams} onChangeText={(v) => setGrams(v.replace(/[^0-9.]/g, ''))} />
               {selectedProduct.packageGrams && (
                 <TouchableOpacity onPress={() => setGrams(selectedProduct.packageGrams!.toString())}>
                   <Text style={[styles.packageHint, { color: colors.primary }]}>уп. {selectedProduct.packageGrams}г</Text>
@@ -302,7 +326,7 @@ export default function AddFoodScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40, paddingTop: 40 },
+  content: { padding: 20, paddingBottom: 40, paddingTop: 60 },
 
   // Тип приёма пищи
   mealTypes: { flexDirection: 'row', gap: 6, marginBottom: 16, flexWrap: 'wrap' },
@@ -345,19 +369,21 @@ const styles = StyleSheet.create({
   addDiaryText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#fff' },
 
   // Ручное добавление
-  manualCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12 },
-  manualTitle: { fontFamily: fontFamily('bold'), fontSize: 16, marginBottom: 12 },
-  manualHint: { fontFamily: fontFamily('medium'), fontSize: 12, marginBottom: 6, marginTop: 8 },
-  manualInput: { fontFamily: fontFamily('regular'), fontSize: 15, padding: Platform.select({ ios: 14, android: 12 }), borderWidth: 1.5, borderRadius: 10, marginBottom: 10 },
-  manualRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  manualField: { flex: 1 },
-  manualFieldLabel: { fontFamily: fontFamily('regular'), fontSize: 11, marginBottom: 3, textAlign: 'center' },
-  manualInputSmall: { fontFamily: fontFamily('regular'), fontSize: 15, padding: Platform.select({ ios: 12, android: 10 }), borderWidth: 1.5, borderRadius: 10, textAlign: 'center' },
+  manualCard: { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 12, width: '100%' },
+  manualTitle: { fontFamily: fontFamily('bold'), fontSize: 15, marginBottom: 10 },
+  manualHint: { fontFamily: fontFamily('medium'), fontSize: 11, marginBottom: 4, marginTop: 6 },
+  manualInput: { fontFamily: fontFamily('regular'), fontSize: 14, paddingVertical: 10, paddingHorizontal: 10, borderWidth: 1, borderRadius: 8, marginBottom: 8 },
+  manualRow: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  manualField: { flex: 1, minWidth: 0 },
+  manualFieldLabel: { fontFamily: fontFamily('regular'), fontSize: 10, marginBottom: 2, textAlign: 'center' },
+  manualInputSmall: { fontFamily: fontFamily('regular'), fontSize: 14, paddingVertical: 8, paddingHorizontal: 4, borderWidth: 1, borderRadius: 8, textAlign: 'center' },
   manualInlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  manualInputHalf: { flex: 1, fontFamily: fontFamily('regular'), fontSize: 15, padding: Platform.select({ ios: 12, android: 10 }), borderWidth: 1.5, borderRadius: 10 },
-  manualUnit: { fontFamily: fontFamily('regular'), fontSize: 14 },
-  barcodeBtn: { width: 44, height: 44, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  manualInputHalf: { flex: 1, fontFamily: fontFamily('regular'), fontSize: 14, paddingVertical: 10, paddingHorizontal: 8, borderWidth: 1, borderRadius: 8 },
+  manualUnit: { fontFamily: fontFamily('regular'), fontSize: 13 },
+  barcodeBtn: { width: 40, height: 40, borderRadius: 8, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
   saveProductBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  resultActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  favBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   saveProductText: { fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' },
 
   cancelBtn: { paddingVertical: 14, borderRadius: 12, borderWidth: 1, alignItems: 'center' },

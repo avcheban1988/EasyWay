@@ -94,7 +94,7 @@ export default function ManualMacrosScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <Text style={[styles.subtitle, { color: colors.icon }]}>
           Укажите свои нормы БЖУ в граммах, калории рассчитаются автоматически
         </Text>

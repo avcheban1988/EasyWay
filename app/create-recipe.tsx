@@ -79,7 +79,7 @@ export default function CreateRecipeScreen() {
   const canSave = name.trim().length > 0 && ingredients.length > 0;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: colors.text }]}>Создать рецепт</Text>
 
       {/* Название */}

@@ -11,7 +11,14 @@ import { useUserStore } from '@/store/userStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -39,7 +46,7 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { userProfile, dailyMacros, loadProfile } = useUserStore();
-  const { loadFoodEntries, removeFoodEntry, getEntriesForDate, getTotalsForDate } = useFoodStore();
+  const { loadFoodEntries, removeFoodEntry, addFoodEntry, getEntriesForDate, getTotalsForDate } = useFoodStore();
   const { checkAuth } = useAuthStore();
 
   const [selectedDate, setSelectedDate] = useState(getToday());
@@ -113,18 +120,18 @@ export default function HomeScreen() {
 
   return (
     <MainTabBackground>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <SummaryCard />
 
         {dailyMacros && (
-          <SurfaceCard>
+          <SurfaceCard style={{ backgroundColor: '#EBF7EE', borderColor: '#53B175' }}>
             <View style={styles.dateHeader}>
               <TouchableOpacity onPress={handlePrevDay} style={styles.arrowBtn} activeOpacity={0.7}>
-                <MaterialIcons name="chevron-left" size={28} color={colors.primary} />
+                <MaterialIcons name="chevron-left" size={28} color="#3D8C54" />
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleDatePress} style={styles.dateCenter} activeOpacity={0.85}>
-                <Text style={[styles.dateValue, { color: colors.text }]}>
+                <Text style={[styles.dateValue, { color: '#3D8C54' }]}>
                   {isToday ? `Сегодня, ${formatDateRu(selectedDate)}` : formatDateRu(selectedDate)}
                 </Text>
               </TouchableOpacity>
@@ -134,29 +141,33 @@ export default function HomeScreen() {
                 style={[styles.arrowBtn, isToday && styles.arrowDisabled]}
                 activeOpacity={isToday ? 1 : 0.7}
               >
-                <MaterialIcons name="chevron-right" size={28} color={isToday ? (colors.icon as string) : colors.primary} />
+                <MaterialIcons name="chevron-right" size={28} color={isToday ? '#B0CAB5' : '#3D8C54'} />
               </TouchableOpacity>
             </View>
 
             {showCalendar && Platform.OS === 'web' && (
-              <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => handleCalendarChange(e.target.value)}
-                  style={{
-                    fontFamily: fontFamily('regular'),
-                    fontSize: 16,
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: `1px solid ${colors.border}`,
-                    width: '100%',
-                    background: colors.background,
-                    color: colors.text,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
+              <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: '#53B175' }]}>
+                <TextInput
+                  style={[styles.calendarInput, { color: colors.text }]}
+                  placeholder="ГГГГ-ММ-ДД"
+                  placeholderTextColor={colors.icon}
+                  defaultValue={selectedDate}
                   autoFocus
+                  selectTextOnFocus
+                  onSubmitEditing={(e) => {
+                    const val = e.nativeEvent.text;
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                      handleCalendarChange(val);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.nativeEvent.text;
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                      handleCalendarChange(val);
+                    } else {
+                      setShowCalendar(false);
+                    }
+                  }}
                 />
               </View>
             )}
@@ -165,8 +176,8 @@ export default function HomeScreen() {
           </SurfaceCard>
         )}
 
-        <SurfaceCard>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        <SurfaceCard style={{ backgroundColor: '#FEF6E7', borderColor: '#F8A44C' }}>
+          <Text style={[styles.sectionTitle, { color: '#B87A2C' }]}>
             Приемы пищи {isToday ? 'сегодня' : formatDateRu(selectedDate)}
           </Text>
           {!hasEntries ? (
@@ -174,37 +185,71 @@ export default function HomeScreen() {
               {isToday ? 'Сегодня еду не записывали' : 'В этот день записей не было'}
             </Text>
           ) : (
-            meals.map((meal) => {
+            (() => {
               const mealColors: Record<string, string> = { 'Завтрак': '#53B175', 'Обед': '#F8A44C', 'Ужин': '#F7A593', 'Перекус': '#D3B0E0' };
-              const mc = mealColors[meal.mealType] ?? '#ccc';
-              return (
-                <SurfaceCard key={meal.id} nested style={[styles.mealRow, { borderLeftColor: mc, borderLeftWidth: 4, backgroundColor: hexToRgba(mc, 0.06) }]}>
-                  <View style={styles.mealRowInner}>
-                    <View style={styles.mealDetails}>
-                      <View style={styles.mealTypeBadge}>
-                        <View style={[styles.mealTypeDot, { backgroundColor: mc }]} />
-                        <Text style={[styles.mealTypeLabel, { color: mc }]}>{meal.mealType}</Text>
-                      </View>
-                      <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
-                      <Text style={[styles.mealNotes, { color: colors.icon }]}>
-                        {meal.calories} ккал • Б {meal.proteins} / Ж {meal.fats} / У {meal.carbs}
-                      </Text>
+              const order = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];
+              const grouped: Record<string, typeof meals> = { Завтрак: [], Обед: [], Ужин: [], Перекус: [] };
+              meals.forEach((m) => { if (grouped[m.mealType]) grouped[m.mealType].push(m); });
+              return order.map((type) => {
+                const items = grouped[type];
+                if (items.length === 0) return null;
+                const mc = mealColors[type] ?? '#ccc';
+                return (
+                  <View key={type} style={[styles.mealGroup, { backgroundColor: hexToRgba(mc, 0.12), borderColor: mc }]}>
+                    <View style={[styles.mealGroupHeader, { borderBottomColor: hexToRgba(mc, 0.2) }]}>
+                      <View style={[styles.mealGroupDot, { backgroundColor: mc }]} />
+                      <Text style={[styles.mealGroupTitle, { color: mc }]}>{type}</Text>
                     </View>
-                    <Button title="X" onPress={() => removeFoodEntry(meal.id)} variant="outline" />
+                    {items.map((meal) => (
+                      <View key={meal.id} style={styles.mealGroupItem}>
+                        <View style={styles.mealGroupItemInfo}>
+                          <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
+                          <Text style={[styles.mealNotes, { color: colors.icon }]}>
+                            {meal.calories} ккал • Б {meal.proteins} / Ж {meal.fats} / У {meal.carbs}
+                          </Text>
+                        </View>
+                        <View style={styles.mealActions}>
+                          <TouchableOpacity onPress={() => {
+                            const val = prompt?.('Новый вес (грамм):', '100');
+                            if (val) {
+                              const ratio = Number(val) / 100;
+                              const old = {
+                                mealType: meal.mealType,
+                                name: meal.name,
+                                calories: Math.round(meal.calories / (meal.proteins || 1) * (meal.proteins || 1) * ratio),
+                                proteins: Math.round(meal.proteins * ratio * 10) / 10,
+                                fats: Math.round(meal.fats * ratio * 10) / 10,
+                                carbs: Math.round(meal.carbs * ratio * 10) / 10,
+                              };
+                              removeFoodEntry(meal.id);
+                              addFoodEntry({ ...old, date: selectedDate });
+                            }
+                          }} style={styles.mealAction} activeOpacity={0.7}>
+                            <MaterialIcons name="edit" size={16} color={colors.icon} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
+                            <MaterialIcons name="close" size={16} color="#E53935" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                </SurfaceCard>
-              );
-            })
+                );
+              });
+            })()
           )}
         </SurfaceCard>
 
-        <SurfaceCard style={styles.addFoodCard}>
-          <Button
-            title="+ Добавить еду"
-            onPress={() => router.push({ pathname: '/add-food', params: { date: selectedDate } })}
-          />
-        </SurfaceCard>
       </ScrollView>
+
+      {/* FAB-кнопка добавления еды */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: '#53B175' }]}
+        onPress={() => router.push({ pathname: '/add-food', params: { date: selectedDate } })}
+        activeOpacity={0.85}
+      >
+        <MaterialIcons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
 
       {/* Toast-сообщение */}
       {toastMsg !== '' && (
@@ -223,6 +268,14 @@ const styles = StyleSheet.create({
   sectionTitle: { ...Typography.title, marginBottom: 10 },
   addFoodCard: { marginBottom: 8, padding: 14 },
   mealRow: { marginBottom: 8, padding: 12, borderRadius: 12 },
+  mealGroup: { borderRadius: 12, borderWidth: 1, marginBottom: 10, overflow: 'hidden' },
+  mealGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1 },
+  mealGroupDot: { width: 10, height: 10, borderRadius: 5 },
+  mealGroupTitle: { fontFamily: fontFamily('semiBold'), fontSize: 13 },
+  mealGroupItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0 },
+  mealGroupItemInfo: { flex: 1, marginRight: 8 },
+  mealActions: { flexDirection: 'row', gap: 4 },
+  mealAction: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   mealRowInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   mealDetails: { flex: 1, marginRight: 10 },
   mealName: { ...Typography.bodySemiBold, marginTop: 4 },
@@ -231,6 +284,22 @@ const styles = StyleSheet.create({
   mealTypeLabel: { fontFamily: fontFamily('semiBold'), fontSize: 11 },
   mealNotes: { ...Typography.caption, marginTop: 2 },
   emptyText: { fontSize: 14, marginTop: 8 },
+  fab: { 
+    position: 'absolute', 
+    bottom: 100, 
+    right: 20, 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 6, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 3 }, 
+    shadowOpacity: 0.25, 
+    shadowRadius: 8,
+    zIndex: 100,
+  },
   gradient: { flex: 1 },
 
   // Дата-заголовок
@@ -266,12 +335,8 @@ const styles = StyleSheet.create({
   },
 
   // Календарь
-  calendarWrap: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 8,
-    marginBottom: 10,
-  },
+  calendarWrap: { borderRadius: 12, borderWidth: 1, padding: 8, marginBottom: 10 },
+  calendarInput: { fontFamily: fontFamily('regular'), fontSize: 16, padding: 8, textAlign: 'center' },
 
   // Toast
   toast: {

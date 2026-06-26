@@ -7,6 +7,7 @@ import { useWeightStore } from '@/store/weightStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Platform,
     ScrollView,
@@ -120,14 +121,28 @@ export default function ProfileScreen() {
           s.setHeight(Number(localHeight));
           s.setWeight(Number(localWeight));
           s.setActivityLevel(localActivity);
-          s.calculateMacros();
-          s.saveProfile();
         }, 600);
       };
     })(),
   ).current;
 
   useEffect(() => { autoSave(); }, [localName, localGoal, localGender, localAge, localHeight, localWeight, localActivity, autoSave]);
+
+  const handleRecalculate = () => {
+    const s = useUserStore.getState();
+    if (localGoal) s.setGoal(localGoal);
+    if (localGender) s.setGender(localGender);
+    s.setAge(Number(localAge));
+    s.setHeight(Number(localHeight));
+    s.setWeight(Number(localWeight));
+    s.setActivityLevel(localActivity);
+    s.calculateMacros();
+    s.saveProfile();
+    const fresh = useUserStore.getState().dailyMacros;
+    if (fresh) {
+      Alert.alert('Новая норма', `Калории: ${fresh.calories} ккал\nБелки: ${fresh.proteins} г\nЖиры: ${fresh.fats} г\nУглеводы: ${fresh.carbs} г`);
+    }
+  };
 
   const handleAddWeight = async () => {
     const w = parseFloat(newWeight);
@@ -161,7 +176,7 @@ export default function ProfileScreen() {
 
   return (
     <MainTabBackground>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.title, { color: colors.text }]}>Настройки профиля</Text>
           <Text style={[styles.subtitle, { color: colors.icon }]}>
@@ -171,13 +186,21 @@ export default function ProfileScreen() {
           {/* Имя */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.text }]}>Имя</Text>
-            <TextInput
-              style={[styles.nameInput, { color: colors.text, borderColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.06) }]}
-              placeholder="Ваше имя"
-              placeholderTextColor={colors.icon}
-              value={localName}
-              onChangeText={setLocalName}
-            />
+            <View style={styles.nameRow}>
+              <TextInput
+                style={[styles.nameInput, { color: colors.text, borderColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.06) }]}
+                placeholder="Ваше имя"
+                placeholderTextColor={colors.icon}
+                value={localName}
+                onChangeText={setLocalName}
+              />
+              <TouchableOpacity style={[styles.nameConfirmBtn, { backgroundColor: '#53B175' }]} onPress={() => { Keyboard.dismiss(); setName(localName); }} activeOpacity={0.85}>
+                <MaterialIcons name="check" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.nameCancelBtn, { borderColor: colors.border }]} onPress={() => { Keyboard.dismiss(); setLocalName(userProfile.name ?? ''); }} activeOpacity={0.85}>
+                <MaterialIcons name="close" size={20} color={colors.icon} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Цель — свёрнуто/развёрнуто */}
@@ -280,17 +303,17 @@ export default function ProfileScreen() {
 
               <View style={[styles.colorField, { borderLeftColor: '#F8A44C', backgroundColor: hexToRgba('#F8A44C', 0.08) }]}>
                 <Text style={[styles.fieldLabel, { color: '#F8A44C' }]}>Возраст</Text>
-                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localAge} onChangeText={setLocalAge} />
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localAge} onChangeText={(v) => setLocalAge(v.replace(/[^0-9]/g, ''))} />
               </View>
 
               <View style={[styles.colorField, { borderLeftColor: '#F7A593', backgroundColor: hexToRgba('#F7A593', 0.08) }]}>
                 <Text style={[styles.fieldLabel, { color: '#F7A593' }]}>Рост (см)</Text>
-                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localHeight} onChangeText={setLocalHeight} />
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localHeight} onChangeText={(v) => setLocalHeight(v.replace(/[^0-9]/g, ''))} />
               </View>
 
               <View style={[styles.colorField, { borderLeftColor: '#D3B0E0', backgroundColor: hexToRgba('#D3B0E0', 0.08) }]}>
                 <Text style={[styles.fieldLabel, { color: '#D3B0E0' }]}>Вес (кг)</Text>
-                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localWeight} onChangeText={setLocalWeight} />
+                <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="numeric" value={localWeight} onChangeText={(v) => setLocalWeight(v.replace(/[^0-9.]/g, ''))} />
               </View>
 
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Активность</Text>
@@ -308,6 +331,9 @@ export default function ProfileScreen() {
               </View>
             </>
           )}
+          <TouchableOpacity style={[styles.recalcBtn, { backgroundColor: colors.primary }]} onPress={handleRecalculate} activeOpacity={0.85}>
+            <Text style={styles.recalcBtnText}>Пересчитать норму</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Блок веса — разворачивающийся */}
@@ -438,8 +464,11 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily('semiBold'), fontSize: 18,
     padding: Platform.select({ ios: 14, android: 12 }),
     borderWidth: 2, borderRadius: 12,
-    textAlign: 'center',
+    textAlign: 'center', flex: 1,
   },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  nameConfirmBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  nameCancelBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   input: {
     fontFamily: fontFamily('regular'), fontSize: 16,
     padding: Platform.select({ ios: 12, android: 10 }),
@@ -523,4 +552,6 @@ const styles = StyleSheet.create({
   },
   cancelBtn: { paddingVertical: 6 },
   cancelText: { fontFamily: fontFamily('regular'), fontSize: 14 },
+  recalcBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },
+  recalcBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#fff' },
 });

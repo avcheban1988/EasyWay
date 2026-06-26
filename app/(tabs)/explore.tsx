@@ -5,8 +5,8 @@ import { useFoodStore } from '@/store/foodStore';
 import { Recipe, useProductStore } from '@/store/productStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -40,6 +40,18 @@ export default function ExploreScreen() {
   const readyRecipes = useMemo(() => recipes.filter((r) => !r.isUserRecipe), [recipes]);
   const filteredReady = selectedCategory === 'all' ? readyRecipes : readyRecipes.filter((r) => r.category === selectedCategory);
 
+  const [toastMsg, setToastMsg] = useState('');
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!toastMsg) return;
+    Animated.sequence([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(2000),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setToastMsg(''));
+  }, [toastMsg, toastOpacity]);
+
   const handleAddRecipeToDiary = (recipe: Recipe) => {
     const macros = getRecipeMacros(recipe.id);
     if (!macros) return;
@@ -51,13 +63,14 @@ export default function ExploreScreen() {
       fats: macros.fats,
       carbs: macros.carbs,
     });
+    setToastMsg(`«${recipe.name}» добавлен в дневник`);
   };
 
   return (
     <MainTabBackground>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: colors.text }]}>Рецепты</Text>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+        <View style={[styles.headerBlock, { backgroundColor: '#EBF7EE', borderColor: '#53B175' }]}>
+          <Text style={[styles.title, { color: '#3D8C54' }]}>Рецепты</Text>
           <TouchableOpacity style={[styles.createBtn, { backgroundColor: '#53B175' }]} onPress={() => router.push('/create-recipe')} activeOpacity={0.85}>
             <MaterialIcons name="add" size={18} color="#fff" />
             <Text style={[styles.createBtnText, { color: '#fff' }]}>Создать</Text>
@@ -143,7 +156,7 @@ export default function ExploreScreen() {
           {filteredReady.map((r) => {
             const macros = getRecipeMacros(r.id);
             return (
-              <View key={r.id} style={[styles.recipeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TouchableOpacity key={r.id} style={[styles.recipeCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push({ pathname: '/recipe-detail', params: { recipeId: r.id } })} activeOpacity={0.85}>
                 <View style={styles.recipeCardContent}>
                   <Text style={[styles.recipeName, { color: colors.text }]}>{r.name}</Text>
                   {macros && <Text style={[styles.recipeMacros, { color: colors.icon }]}>~{macros.calories} ккал · Б {macros.proteins} / Ж {macros.fats} / У {macros.carbs}</Text>}
@@ -151,11 +164,17 @@ export default function ExploreScreen() {
                 <TouchableOpacity style={[styles.addRecipeBtn, { backgroundColor: hexToRgba('#53B175', 0.12) }]} onPress={() => handleAddRecipeToDiary(r)} activeOpacity={0.85}>
                   <MaterialIcons name="add" size={18} color="#53B175" />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
       </ScrollView>
+
+      {toastMsg !== '' && (
+        <Animated.View style={[styles.toast, { opacity: toastOpacity, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+          <Text style={styles.toastText}>{toastMsg}</Text>
+        </Animated.View>
+      )}
     </MainTabBackground>
   );
 }
@@ -163,8 +182,8 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 16, paddingBottom: 40 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  title: { fontFamily: fontFamily('bold'), fontSize: 24 },
+  headerBlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 16 },
+  title: { fontFamily: fontFamily('bold'), fontSize: 22 },
   createBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5 },
   createBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 13 },
 
@@ -188,6 +207,8 @@ const styles = StyleSheet.create({
   addRecipeBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
   recipeItem: { borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 6 },
+  toast: { position: 'absolute', bottom: 100, left: 40, right: 40, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, alignItems: 'center' },
+  toastText: { fontFamily: fontFamily('semiBold'), fontSize: 14, color: '#fff' },
   recipeItemRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 6 },
   recipeItemContent: { flex: 1, marginRight: 8 },
   recipeActions: { flexDirection: 'row', gap: 6 },

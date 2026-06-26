@@ -17,7 +17,7 @@ type TabRoute = {
 };
 
 const TABS: (TabRoute & { icon: keyof typeof MaterialIcons.glyphMap })[] = [
-  { key: 'index', title: 'Главная', icon: 'home' },
+  { key: 'index', title: 'Дневник', icon: 'home' },
   { key: 'explore', title: 'Рецепты', icon: 'menu-book' },
   { key: 'profile', title: 'Профиль', icon: 'person' },
 ];
@@ -119,14 +119,14 @@ export function GlassTabBar({
 const styles = StyleSheet.create({
   outerWrap: {
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingBottom: 16,
     marginTop: -20,
   },
   container: {
     borderRadius: 20,
-    paddingVertical: 6,
-    paddingBottom: 8,
-    borderTopWidth: 0,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(200,200,220,0.5)',
     // Тень для стеклянного эффекта
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -144,13 +144,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   label: {
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 14,
   },
   indicator: {
     position: 'absolute',
-    top: 6,
-    height: 44,
+    top: 8,
+    height: 42,
     borderRadius: 12,
     zIndex: -1,
   },

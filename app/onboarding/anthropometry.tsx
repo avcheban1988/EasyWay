@@ -92,7 +92,7 @@ export default function AnthropometryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: '#fff' }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Декоративный блок сверху как в auth */}
         <View style={styles.imageWrap}>
           <Image

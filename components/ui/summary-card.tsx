@@ -128,6 +128,12 @@ export function SummaryCard() {
     return set.size;
   }, [foodEntries]);
 
+  const formatDateShort = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
   const latestWeight = weightEntries[0]?.weight ?? null;
   const prevWeight = weightEntries[1]?.weight ?? null;
   const weightDelta = latestWeight !== null && prevWeight !== undefined ? Math.round((latestWeight - prevWeight) * 10) / 10 : 0;
@@ -276,7 +282,7 @@ export function SummaryCard() {
           weightEntries.map((w) => (
             <View key={w.id} style={{ paddingVertical: 6 }}>
               <Text style={{ ...Typography.bodySemiBold, color: colors.text }}>{w.weight} kg</Text>
-              <Text style={{ ...Typography.caption, color: colors.icon }}>{w.date}</Text>
+              <Text style={{ ...Typography.caption, color: colors.icon }}>{formatDateShort(w.date)}</Text>
             </View>
           ))
         )}
