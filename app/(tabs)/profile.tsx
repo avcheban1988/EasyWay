@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
+    Keyboard,
     Platform,
     ScrollView,
     StyleSheet,
