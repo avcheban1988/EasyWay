@@ -64,7 +64,7 @@ export default function ResultsScreen() {
             </View>
             <View style={styles.macroCol}>
               <Text style={[styles.macroNumber, { color: '#F8A44C' }]}>{dailyMacros.carbs}</Text>
-              <Text style={[styles.macroLabelSmall, { color: '#F8A44C' }]}>угли</Text>
+              <Text style={[styles.macroLabelSmall, { color: '#F8A44C' }]}>Углеводы</Text>
             </View>
           </View>
 

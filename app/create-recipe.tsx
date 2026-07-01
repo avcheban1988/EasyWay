@@ -79,7 +79,7 @@ export default function CreateRecipeScreen() {
   const canSave = name.trim().length > 0 && ingredients.length > 0;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
       <Text style={[styles.title, { color: colors.text }]}>Создать рецепт</Text>
 
       {/* Название */}
@@ -178,7 +178,7 @@ export default function CreateRecipeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  content: { padding: 20, paddingTop: 60, paddingBottom: 225 },
   title: { fontFamily: fontFamily('bold'), fontSize: 22, marginBottom: 20 },
   label: { fontFamily: fontFamily('medium'), fontSize: 13, marginBottom: 6 },
   input: { fontFamily: fontFamily('regular'), fontSize: 16, padding: Platform.select({ ios: 14, android: 12 }), borderWidth: 1.5, borderRadius: 12, marginBottom: 16 },

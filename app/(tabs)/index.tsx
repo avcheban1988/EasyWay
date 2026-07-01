@@ -81,7 +81,6 @@ export default function HomeScreen() {
   const meals = getEntriesForDate(selectedDate);
   const dayTotals = getTotalsForDate(selectedDate);
   const isToday = selectedDate === getToday();
-  const hasEntries = meals.length > 0;
 
   const handlePrevDay = () => setSelectedDate(shiftDate(selectedDate, -1));
   const handleNextDay = () => {
@@ -176,68 +175,83 @@ export default function HomeScreen() {
           </SurfaceCard>
         )}
 
-        <SurfaceCard style={{ backgroundColor: '#FEF6E7', borderColor: '#F8A44C' }}>
-          <Text style={[styles.sectionTitle, { color: '#B87A2C' }]}>
-            Приемы пищи {isToday ? 'сегодня' : formatDateRu(selectedDate)}
-          </Text>
-          {!hasEntries ? (
-            <Text style={[styles.emptyText, { color: colors.icon }]}>
-              {isToday ? 'Сегодня еду не записывали' : 'В этот день записей не было'}
-            </Text>
-          ) : (
-            (() => {
-              const mealColors: Record<string, string> = { 'Завтрак': '#53B175', 'Обед': '#F8A44C', 'Ужин': '#F7A593', 'Перекус': '#D3B0E0' };
-              const order = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];
-              const grouped: Record<string, typeof meals> = { Завтрак: [], Обед: [], Ужин: [], Перекус: [] };
-              meals.forEach((m) => { if (grouped[m.mealType]) grouped[m.mealType].push(m); });
-              return order.map((type) => {
-                const items = grouped[type];
-                if (items.length === 0) return null;
-                const mc = mealColors[type] ?? '#ccc';
-                return (
-                  <View key={type} style={[styles.mealGroup, { backgroundColor: hexToRgba(mc, 0.12), borderColor: mc }]}>
-                    <View style={[styles.mealGroupHeader, { borderBottomColor: hexToRgba(mc, 0.2) }]}>
-                      <View style={[styles.mealGroupDot, { backgroundColor: mc }]} />
-                      <Text style={[styles.mealGroupTitle, { color: mc }]}>{type}</Text>
+        {/* 4 отдельных блока: Завтрак, Обед, Ужин, Перекус */}
+        {(() => {
+          const mealConfig: { key: string; label: string; color: string; textColor: string; icon: keyof typeof MaterialIcons.glyphMap }[] = [
+            { key: 'Завтрак', label: 'Завтрак', color: '#53B175', textColor: '#2E7D32', icon: 'free-breakfast' },
+            { key: 'Обед', label: 'Обед', color: '#F8A44C', textColor: '#B87020', icon: 'lunch-dining' },
+            { key: 'Ужин', label: 'Ужин', color: '#F7A593', textColor: '#C06050', icon: 'dinner-dining' },
+            { key: 'Перекус', label: 'Перекус', color: '#D3B0E0', textColor: '#8E5BA0', icon: 'cookie' },
+          ];
+
+          const grouped: Record<string, typeof meals> = { Завтрак: [], Обед: [], Ужин: [], Перекус: [] };
+          meals.forEach((m) => { if (grouped[m.mealType]) grouped[m.mealType].push(m); });
+
+          return mealConfig.map((cfg) => {
+            const items = grouped[cfg.key];
+            const sum = items.reduce((acc, m) => ({
+              calories: acc.calories + m.calories,
+              proteins: acc.proteins + (m.proteins || 0),
+              fats: acc.fats + (m.fats || 0),
+              carbs: acc.carbs + (m.carbs || 0),
+            }), { calories: 0, proteins: 0, fats: 0, carbs: 0 });
+
+            return (
+              <View key={cfg.key} style={[styles.mealBlock, { borderColor: cfg.color, backgroundColor: colors.card }]}>
+                {/* Заголовок с суммой БЖУ и плюсиком */}
+                <View style={[styles.mealBlockHeader, { borderBottomColor: hexToRgba(cfg.color, 0.25) }]}>
+                  <View style={styles.mealBlockHeaderRow}>
+                    <View style={styles.mealBlockHeaderLeft}>
+                      <MaterialIcons name={cfg.icon} size={18} color={cfg.textColor} />
+                      <Text style={[styles.mealBlockTitle, { color: cfg.textColor }]}>{cfg.label}</Text>
                     </View>
-                    {items.map((meal) => (
-                      <View key={meal.id} style={styles.mealGroupItem}>
-                        <View style={styles.mealGroupItemInfo}>
-                          <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
-                          <Text style={[styles.mealNotes, { color: colors.icon }]}>
-                            {meal.calories} ккал • Б {meal.proteins} / Ж {meal.fats} / У {meal.carbs}
-                          </Text>
-                        </View>
-                        <View style={styles.mealActions}>
-                          <TouchableOpacity onPress={() => {
-                            setEditModalGrams('100');
-                            setEditModalMeal(meal);
-                          }} style={styles.mealAction} activeOpacity={0.7}>
-                            <MaterialIcons name="edit" size={16} color={colors.icon} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
-                            <MaterialIcons name="close" size={16} color="#E53935" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))}
+                    <TouchableOpacity
+                      style={[styles.mealBlockAddBtn, { backgroundColor: cfg.color }]}
+                      onPress={() => router.push({ pathname: '/add-food', params: { date: selectedDate, mealType: cfg.key } })}
+                      activeOpacity={0.85}
+                    >
+                      <MaterialIcons name="add" size={18} color="#fff" />
+                    </TouchableOpacity>
                   </View>
-                );
-              });
-            })()
-          )}
-        </SurfaceCard>
+                  <Text style={[styles.mealBlockSum, { color: cfg.textColor }]}>
+                    {Math.round(sum.calories)} ккал · Б {Math.round(sum.proteins)} / Ж {Math.round(sum.fats)} / У {Math.round(sum.carbs)}
+                  </Text>
+                </View>
+
+                {/* Список продуктов в этом приёме пищи */}
+                {items.length === 0 ? (
+                  <Text style={[styles.mealBlockEmpty, { color: hexToRgba(cfg.textColor, 0.7) }]}>
+                    Пока ничего не добавлено
+                  </Text>
+                ) : (
+                  items.map((meal) => (
+                    <View key={meal.id} style={[styles.mealBlockItem, { borderBottomColor: hexToRgba(cfg.color, 0.12) }]}>
+                      <View style={styles.mealBlockItemInfo}>
+                        <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
+                        <Text style={[styles.mealNotes, { color: colors.icon }]}>
+                          {Math.round(meal.calories)} ккал · Б {Math.round(meal.proteins)} / Ж {Math.round(meal.fats)} / У {Math.round(meal.carbs)}
+                        </Text>
+                      </View>
+                      <View style={styles.mealActions}>
+                        <TouchableOpacity onPress={() => { setEditModalGrams('100'); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
+                          <MaterialIcons name="edit" size={16} color={colors.icon} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
+                          <MaterialIcons name="close" size={16} color="#E53935" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+            );
+          });
+        })()}
+
+        {/* Отступ после последнего блока */}
+        <View style={{ height: 20 }} />
 
       </ScrollView>
-
-      {/* FAB-кнопка добавления еды */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: '#53B175' }]}
-        onPress={() => router.push({ pathname: '/add-food', params: { date: selectedDate } })}
-        activeOpacity={0.85}
-      >
-        <MaterialIcons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
 
       {/* Toast-сообщение */}
       {toastMsg !== '' && (
@@ -348,12 +362,17 @@ const styles = StyleSheet.create({
   sectionTitle: { ...Typography.title, marginBottom: 10 },
   addFoodCard: { marginBottom: 8, padding: 14 },
   mealRow: { marginBottom: 8, padding: 12, borderRadius: 12 },
-  mealGroup: { borderRadius: 12, borderWidth: 1, marginBottom: 10, overflow: 'hidden' },
-  mealGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1 },
-  mealGroupDot: { width: 10, height: 10, borderRadius: 5 },
-  mealGroupTitle: { fontFamily: fontFamily('semiBold'), fontSize: 13 },
-  mealGroupItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0 },
-  mealGroupItemInfo: { flex: 1, marginRight: 8 },
+  // Блоки приёма пищи
+  mealBlock: { borderRadius: 14, borderWidth: 1.5, marginBottom: 12, overflow: 'hidden' },
+  mealBlockHeader: { paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1 },
+  mealBlockHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  mealBlockHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mealBlockTitle: { fontFamily: fontFamily('bold'), fontSize: 15 },
+  mealBlockSum: { fontFamily: fontFamily('medium'), fontSize: 12, marginLeft: 26 },
+  mealBlockAddBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  mealBlockEmpty: { fontFamily: fontFamily('regular'), fontSize: 13, padding: 12, textAlign: 'center' },
+  mealBlockItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0.5 },
+  mealBlockItemInfo: { flex: 1, marginRight: 8 },
   mealActions: { flexDirection: 'row', gap: 4 },
   mealAction: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   mealRowInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

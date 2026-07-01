@@ -185,9 +185,6 @@ export function SummaryCard() {
                 <View style={styles.statItemLeft}>
                   <Text style={[styles.statTextItalic, { color: colors.icon }]}>Результаты недели</Text>
                 </View>
-                <TouchableOpacity style={styles.statItemRight} onPress={() => setInfoOpen(true)}>
-                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Вес: <Text style={[styles.highlight, { color: colors.tint }]}>{latestWeight ?? '—'} kg</Text>{latestWeight !== null && prevWeight !== undefined ? <Text style={{ color: colors.icon }}> ({weightDelta > 0 ? '+' : ''}{weightDelta} kg)</Text> : null}</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={styles.compactRow}>
@@ -217,7 +214,7 @@ export function SummaryCard() {
                 <View style={styles.barTrack}>
                   <View style={[styles.barFill, { backgroundColor: '#FF9800', width: `${carbsProgress * 100}%` }]} />
                 </View>
-                <Text style={[styles.barValue, { color: colors.icon }]}>{weekSums.carbs} / {weeklyTargets.carbs}</Text>
+                <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.carbs)} / {Math.round(weeklyTargets.carbs)}</Text>
               </View>
 
               <View style={styles.barRow}>
@@ -225,7 +222,7 @@ export function SummaryCard() {
                 <View style={styles.barTrack}>
                   <View style={[styles.barFill, { backgroundColor: '#66BB6A', width: `${proteinsProgress * 100}%` }]} />
                 </View>
-                <Text style={[styles.barValue, { color: colors.icon }]}>{weekSums.proteins} / {weeklyTargets.proteins}</Text>
+                <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.proteins)} / {Math.round(weeklyTargets.proteins)}</Text>
               </View>
 
               <View style={styles.barRow}>
@@ -233,16 +230,13 @@ export function SummaryCard() {
                 <View style={styles.barTrack}>
                   <View style={[styles.barFill, { backgroundColor: '#E53935', width: `${fatsProgress * 100}%` }]} />
                 </View>
-                <Text style={[styles.barValue, { color: colors.icon }]}>{weekSums.fats} / {weeklyTargets.fats}</Text>
+                <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.fats)} / {Math.round(weeklyTargets.fats)}</Text>
               </View>
 
               <View style={styles.bottomRow}>
                 <View style={styles.statItemLeft}>
                   <Text style={[styles.statTextItalic, { color: colors.icon }]}>Результаты недели</Text>
                 </View>
-                <TouchableOpacity style={styles.statItemRight} onPress={() => setInfoOpen(true)}>
-                  <Text style={[styles.statTextItalic, { color: colors.icon }]}>Вес: <Text style={[styles.highlight, { color: colors.tint }]}>{latestWeight ?? '—'} kg</Text>{latestWeight !== null && prevWeight !== undefined ? <Text style={{ color: colors.icon }}> ({weightDelta > 0 ? '+' : ''}{weightDelta} kg)</Text> : null}</Text>
-                </TouchableOpacity>
               </View>
             </>
           )}

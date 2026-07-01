@@ -1,7 +1,7 @@
 import { MainTabBackground } from '@/components/ui/main-tab-background';
 import { Colors, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useFoodStore } from '@/store/foodStore';
+import { MealType, useFoodStore } from '@/store/foodStore';
 import { Recipe, useProductStore } from '@/store/productStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -32,18 +32,32 @@ export default function ExploreScreen() {
   const { products, favoriteIds, recipes, toggleFavorite, removeRecipe, getRecipeMacros, load: loadProducts } = useProductStore();
   const { addFoodEntry } = useFoodStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [favoritesExpanded, setFavoritesExpanded] = useState(false);
+  const [userRecipesExpanded, setUserRecipesExpanded] = useState(false);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
+  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+
   const favoriteProducts = useMemo(() => products.filter((p) => favoriteIds.includes(p.id)), [products, favoriteIds]);
+  const displayedFavorites = useMemo(() => favoritesExpanded ? favoriteProducts : favoriteProducts.slice(0, 3), [favoriteProducts, favoritesExpanded]);
   const userRecipes = useMemo(() => recipes.filter((r) => r.isUserRecipe), [recipes]);
+  const displayedUserRecipes = useMemo(() => userRecipesExpanded ? userRecipes : userRecipes.slice(0, 3), [userRecipes, userRecipesExpanded]);
   const readyRecipes = useMemo(() => recipes.filter((r) => !r.isUserRecipe), [recipes]);
+  const customProducts = useMemo(() => products.filter((p) => !DEFAULT_IDS.includes(p.id)), [products]);
   const filteredReady = selectedCategory === 'all' ? readyRecipes : readyRecipes.filter((r) => r.category === selectedCategory);
 
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const [favAddProduct, setFavAddProduct] = useState<{ id: string; name: string; caloriesPer100: number; proteinsPer100: number; fatsPer100: number; carbsPer100: number; packageGrams?: number } | null>(null);
   const [favAddGrams, setFavAddGrams] = useState('100');
+  const [favMealType, setFavMealType] = useState<MealType>('Завтрак');
+  const [recipeAddModal, setRecipeAddModal] = useState<{ id: string; name: string; calories: number; proteins: number; fats: number; carbs: number } | null>(null);
+  const [recipePortions, setRecipePortions] = useState('1');
+  const [recipeMealType, setRecipeMealType] = useState<MealType>('Завтрак');
+
+  const MEAL_TYPES: MealType[] = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];  
+  const MEAL_COLORS: Record<MealType, string> = { 'Завтрак': '#53B175', 'Обед': '#F8A44C', 'Ужин': '#F7A593', 'Перекус': '#D3B0E0' };
 
   useEffect(() => {
     if (!toastMsg) return;
@@ -53,20 +67,6 @@ export default function ExploreScreen() {
       Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start(() => setToastMsg(''));
   }, [toastMsg, toastOpacity]);
-
-  const handleAddRecipeToDiary = (recipe: Recipe) => {
-    const macros = getRecipeMacros(recipe.id);
-    if (!macros) return;
-    addFoodEntry({
-      mealType: 'Завтрак',
-      name: recipe.name,
-      calories: macros.calories,
-      proteins: macros.proteins,
-      fats: macros.fats,
-      carbs: macros.carbs,
-    });
-    setToastMsg(`«${recipe.name}» добавлен в дневник`);
-  };
 
   return (
     <MainTabBackground>
@@ -87,7 +87,7 @@ export default function ExploreScreen() {
           {favoriteProducts.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.icon }]}>Нет избранных продуктов</Text>
           ) : (
-            favoriteProducts.map((p) => (
+            displayedFavorites.map((p) => (
               <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
                 <View style={styles.productInfo}>
                   <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
@@ -97,9 +97,34 @@ export default function ExploreScreen() {
                   <MaterialIcons name="star" size={22} color="#F8A44C" />
                 </TouchableOpacity>
               </TouchableOpacity>
-            ))
+            ))}
+            {favoriteProducts.length > 3 && (
+              <TouchableOpacity style={styles.expandRow} onPress={() => setFavoritesExpanded((v) => !v)} activeOpacity={0.85}>
+                <Text style={[styles.expandText, { color: colors.primary }]}>{favoritesExpanded ? 'Свернуть' : `Еще ${favoriteProducts.length - 3}`}</Text>
+                <MaterialIcons name={favoritesExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Добавленные мной */}
+          {customProducts.length > 0 && (
+            <View style={[styles.sectionCard, { backgroundColor: '#E8F0FE', borderColor: '#5B8DEF' }]}>
+              <Text style={[styles.sectionTitle, { color: '#3A6FD8' }]}>
+                <MaterialIcons name="playlist-add" size={16} color="#5B8DEF" /> Добавленные мной
+              </Text>
+              {customProducts.map((p) => (
+                <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
+                  <View style={styles.productInfo}>
+                    <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
+                    <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
+                    <MaterialIcons name={favoriteIds.includes(p.id) ? 'star' : 'star-outline'} size={22} color={favoriteIds.includes(p.id) ? '#F8A44C' : colors.icon} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
-        </View>
 
         {/* Рецепты пользователя */}
         <View style={[styles.sectionCard, { backgroundColor: '#EBF7EE', borderColor: '#53B175' }]}>
@@ -109,10 +134,15 @@ export default function ExploreScreen() {
           {userRecipes.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.icon }]}>Нет своих рецептов</Text>
           ) : (
-            userRecipes.map((r) => {
+            displayedUserRecipes.map((r) => {
               const macros = getRecipeMacros(r.id);
               return (
-                <View key={r.id} style={[styles.recipeItemRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TouchableOpacity key={r.id} style={[styles.recipeItemRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => {
+                  if (macros) {
+                    setRecipePortions('1');
+                    setRecipeAddModal({ id: r.id, name: r.name, ...macros });
+                  }
+                }} activeOpacity={0.85}>
                   <View style={styles.recipeItemContent}>
                     <Text style={[styles.recipeName, { color: colors.text }]}>{r.name}</Text>
                     {macros && <Text style={[styles.recipeMacros, { color: colors.icon }]}>~{macros.calories} ккал · Б {macros.proteins} / Ж {macros.fats} / У {macros.carbs}</Text>}
@@ -129,11 +159,16 @@ export default function ExploreScreen() {
                       <MaterialIcons name="close" size={20} color="#E53935" />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
-            })
-          )}
-        </View>
+            })}
+            {userRecipes.length > 3 && (
+              <TouchableOpacity style={styles.expandRow} onPress={() => setUserRecipesExpanded((v) => !v)} activeOpacity={0.85}>
+                <Text style={[styles.expandText, { color: colors.primary }]}>{userRecipesExpanded ? 'Свернуть' : `Еще ${userRecipes.length - 3}`}</Text>
+                <MaterialIcons name={userRecipesExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
 
         {/* Готовые рецепты с категориями */}
         <View style={[styles.sectionCard, { backgroundColor: '#F5EEFA', borderColor: '#D3B0E0' }]}>
@@ -163,7 +198,12 @@ export default function ExploreScreen() {
                   <Text style={[styles.recipeName, { color: colors.text }]}>{r.name}</Text>
                   {macros && <Text style={[styles.recipeMacros, { color: colors.icon }]}>~{macros.calories} ккал · Б {macros.proteins} / Ж {macros.fats} / У {macros.carbs}</Text>}
                 </View>
-                <TouchableOpacity style={[styles.addRecipeBtn, { backgroundColor: hexToRgba('#53B175', 0.12) }]} onPress={() => handleAddRecipeToDiary(r)} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.addRecipeBtn, { backgroundColor: hexToRgba('#53B175', 0.12) }]} onPress={() => {
+                  if (macros) {
+                    setRecipePortions('1');
+                    setRecipeAddModal({ id: r.id, name: r.name, ...macros });
+                  }
+                }} activeOpacity={0.85}>
                   <MaterialIcons name="add" size={18} color="#53B175" />
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -172,18 +212,104 @@ export default function ExploreScreen() {
         </View>
       </ScrollView>
 
+      {/* Модалка добавления рецепта пользователя */}
+      {recipeAddModal && (
+        <View style={styles.modalOverlayTop}>
+          <View style={[styles.modalContent, { marginTop: 60, backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{recipeAddModal.name}</Text>
+
+            {/* Выбор приёма пищи */}
+            <View style={styles.mealTypeRow}>
+              {MEAL_TYPES.map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[
+                    styles.mealTypeChip,
+                    { backgroundColor: recipeMealType === t ? MEAL_COLORS[t] : hexToRgba(MEAL_COLORS[t], 0.15), borderColor: MEAL_COLORS[t] },
+                  ]}
+                  onPress={() => setRecipeMealType(t)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.mealTypeChipText, { color: recipeMealType === t ? '#fff' : MEAL_COLORS[t] }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Количество порций:</Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              keyboardType="decimal-pad"
+              value={recipePortions}
+              onChangeText={(v) => { const clean = v.replace(/[^0-9.,]/g, '').replace(',', '.'); if ((clean.match(/\./g) || []).length <= 1) setRecipePortions(clean); }}
+            />
+              selectTextOnFocus
+            />
+            <View style={[styles.macroPreview, { backgroundColor: colors.backgroundSoft }]}>
+              <Text style={[styles.macroPreviewText, { color: colors.text }]}>
+                ~{Math.round(recipeAddModal.calories * Number(recipePortions || 1))} ккал · Б {Math.round(recipeAddModal.proteins * Number(recipePortions || 1) * 10) / 10} / Ж {Math.round(recipeAddModal.fats * Number(recipePortions || 1) * 10) / 10} / У {Math.round(recipeAddModal.carbs * Number(recipePortions || 1) * 10) / 10}
+              </Text>
+            </View>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
+                onPress={() => {
+                  const p = Number(recipePortions) || 1;
+                  addFoodEntry({
+                    mealType: recipeMealType,
+                    name: recipeAddModal.name,
+                    calories: Math.round(recipeAddModal.calories * p),
+                    proteins: Math.round(recipeAddModal.proteins * p * 10) / 10,
+                    fats: Math.round(recipeAddModal.fats * p * 10) / 10,
+                    carbs: Math.round(recipeAddModal.carbs * p * 10) / 10,
+                  });
+                  setToastMsg(`«${recipeAddModal.name}» добавлен в дневник`);
+                  setRecipeAddModal(null);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Добавить</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: '#E53935' }]}
+                onPress={() => setRecipeAddModal(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnText}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Модалка добавления избранного продукта */}
       {favAddProduct && (
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.modalOverlayTop}>
+          <View style={[styles.modalContent, { marginTop: 60, backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>{favAddProduct.name}</Text>
+
+            {/* Выбор приёма пищи */}
+            <View style={styles.mealTypeRow}>
+              {MEAL_TYPES.map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[
+                    styles.mealTypeChip,
+                    { backgroundColor: favMealType === t ? MEAL_COLORS[t] : hexToRgba(MEAL_COLORS[t], 0.15), borderColor: MEAL_COLORS[t] },
+                  ]}
+                  onPress={() => setFavMealType(t)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.mealTypeChipText, { color: favMealType === t ? '#fff' : MEAL_COLORS[t] }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <Text style={[styles.modalLabel, { color: colors.icon }]}>Вес (грамм):</Text>
             <TextInput
               style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               value={favAddGrams}
-              onChangeText={(v) => setFavAddGrams(v.replace(/[^0-9.]/g, ''))}
-              autoFocus
+              onChangeText={(v) => { const clean = v.replace(/[^0-9.,]/g, '').replace(',', '.'); if ((clean.match(/\./g) || []).length <= 1) setFavAddGrams(clean); }}
               selectTextOnFocus
             />
             {favAddProduct.packageGrams && (
@@ -199,7 +325,7 @@ export default function ExploreScreen() {
                     const qty = Number(favAddGrams) || 100;
                     const mult = qty / 100;
                     addFoodEntry({
-                      mealType: 'Завтрак',
+                      mealType: favMealType,
                       name: favAddProduct.name,
                       calories: Math.round(favAddProduct.caloriesPer100 * mult),
                       proteins: Math.round(favAddProduct.proteinsPer100 * mult * 10) / 10,
@@ -276,6 +402,10 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
   },
+  modalOverlayTop: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', zIndex: 1000,
+  },
   modalContent: { width: '85%', borderRadius: 16, borderWidth: 1, padding: 24 },
   modalTitle: { fontFamily: fontFamily('bold'), fontSize: 18, marginBottom: 16 },
   modalLabel: { fontFamily: fontFamily('regular'), fontSize: 14, marginBottom: 8 },
@@ -287,4 +417,11 @@ const styles = StyleSheet.create({
   modalButtons: { flexDirection: 'row', gap: 10 },
   modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   modalBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' },
+  mealTypeRow: { flexDirection: 'row', gap: 6, marginBottom: 16, flexWrap: 'wrap' },
+  mealTypeChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1 },
+  mealTypeChipText: { fontFamily: fontFamily('semiBold'), fontSize: 13 },
+  macroPreview: { borderRadius: 10, padding: 10, alignItems: 'center', marginBottom: 12 },
+  macroPreviewText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
+  expandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 8 },
+  expandText: { fontFamily: fontFamily('semiBold'), fontSize: 13 },
 });

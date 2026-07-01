@@ -51,7 +51,7 @@ export function MacrosDisplay({ macros, todayTotals }: MacrosDisplayProps) {
           <View style={styles.barHeader}>
             <Text style={[styles.barLabel, { color: colors.text }]}>{bar.label}</Text>
             <Text style={[styles.barCount, { color: colors.icon }]}>
-              {bar.eaten} / {bar.target} {bar.unit}
+              {Math.round(bar.eaten)} / {Math.round(bar.target)} {bar.unit}
             </Text>
           </View>
           <View style={[styles.barTrack, bar.big && styles.bigBarTrack]}>

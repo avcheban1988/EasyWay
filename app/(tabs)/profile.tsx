@@ -1,10 +1,14 @@
+import { InfoModal } from '@/components/ui/info-modal';
 import { MainTabBackground } from '@/components/ui/main-tab-background';
 import { ACTIVITY_LEVELS } from '@/constants/activityLevels';
 import { Colors, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuthStore } from '@/store/authStore';
+import { useFoodStore } from '@/store/foodStore';
 import { GenderType, GoalType, useUserStore } from '@/store/userStore';
 import { useWeightStore } from '@/store/weightStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Alert,
@@ -50,6 +54,7 @@ export default function ProfileScreen() {
     saveProfile,
   } = useUserStore();
 
+  const router = useRouter();
   const { entries: weightEntries, addEntry: addWeightEntry, loadEntries: loadWeightEntries } = useWeightStore();
 
   const [localName, setLocalName] = useState(userProfile.name ?? '');
@@ -69,6 +74,8 @@ export default function ProfileScreen() {
   const [weightExpanded, setWeightExpanded] = useState(false);
   const [addingWeight, setAddingWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+  const [resultsModalVisible, setResultsModalVisible] = useState(false);
+  const [resultsData, setResultsData] = useState<{ calories: number; proteins: number; fats: number; carbs: number } | null>(null);
 
   const weightAnim = useRef(new Animated.Value(0)).current;
 
@@ -141,7 +148,7 @@ export default function ProfileScreen() {
 
   useEffect(() => { autoSave(); }, [localName, localGoal, localGender, localAge, localHeight, localWeight, localActivity, localManualProteins, localManualFats, localManualCarbs, autoSave]);
 
-  const handleRecalculate = () => {
+  const doRecalculate = () => {
     const s = useUserStore.getState();
     if (localGoal) s.setGoal(localGoal);
     if (localGender) s.setGender(localGender);
@@ -153,16 +160,23 @@ export default function ProfileScreen() {
       const p = Number(localManualProteins) || 0;
       const f = Number(localManualFats) || 0;
       const c = Number(localManualCarbs) || 0;
-      if (p && f && c) s.setManualMacros(p, f, c);
+      if (p > 0 || f > 0 || c > 0) {
+        s.setManualMacros(p || 0, f || 0, c || 0);
+      }
     } else {
       s.calculateMacros();
     }
     s.saveProfile();
-    setParamsExpanded(false);
     const fresh = useUserStore.getState().dailyMacros;
     if (fresh) {
-      Alert.alert('Новая норма', `Калории: ${fresh.calories} ккал\nБелки: ${fresh.proteins} г\nЖиры: ${fresh.fats} г\nУглеводы: ${fresh.carbs} г`);
+      setResultsData(fresh);
+      setResultsModalVisible(true);
     }
+  };
+
+  const handleRecalculate = () => {
+    doRecalculate();
+    setParamsExpanded(false);
   };
 
   const handleAddWeight = async () => {
@@ -207,20 +221,25 @@ export default function ProfileScreen() {
           {/* Имя */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.text }]}>Имя</Text>
-            <View style={styles.nameRow}>
-              <TextInput
-                style={[styles.nameInput, { color: colors.text, borderColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.06) }]}
-                placeholder="Ваше имя"
-                placeholderTextColor={colors.icon}
-                value={localName}
-                onChangeText={setLocalName}
-              />
-              <TouchableOpacity style={[styles.nameConfirmBtn, { backgroundColor: '#53B175' }]} onPress={() => { Keyboard.dismiss(); setName(localName); }} activeOpacity={0.85}>
-                <MaterialIcons name="check" size={20} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.nameCancelBtn, { borderColor: colors.border }]} onPress={() => { Keyboard.dismiss(); setLocalName(userProfile.name ?? ''); }} activeOpacity={0.85}>
-                <MaterialIcons name="close" size={20} color={colors.icon} />
-              </TouchableOpacity>
+            <TextInput
+              style={[styles.nameInput, { color: colors.text, borderColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.06) }]}
+              placeholder="Ваше имя"
+              placeholderTextColor={colors.icon}
+              value={localName}
+              onChangeText={setLocalName}
+            />
+            {/* Контейнер фиксированной высоты — вёрстка не прыгает */}
+            <View style={styles.nameActionsWrap}>
+              {localName !== (userProfile.name ?? '') && (
+                <View style={styles.nameActions}>
+                  <TouchableOpacity style={[styles.nameConfirmBtn, { backgroundColor: '#53B175' }]} onPress={() => { Keyboard.dismiss(); setName(localName); }} activeOpacity={0.85}>
+                    <MaterialIcons name="check" size={20} color="#fff" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.nameCancelBtn, { borderColor: colors.border }]} onPress={() => { Keyboard.dismiss(); setLocalName(userProfile.name ?? ''); }} activeOpacity={0.85}>
+                    <MaterialIcons name="close" size={20} color={colors.icon} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 
@@ -258,7 +277,7 @@ export default function ProfileScreen() {
                       borderColor: isActive ? g.color : hexToRgba(g.color, 0.4),
                     },
                   ]}
-                  onPress={() => { setLocalGoal(g.id); setGoalsExpanded(false); }}
+                  onPress={() => { setLocalGoal(g.id); setGoalsExpanded(false); if (g.id !== 'manual') setTimeout(doRecalculate, 100); }}
                   activeOpacity={0.85}
                 >
                   <MaterialIcons
@@ -398,9 +417,11 @@ export default function ProfileScreen() {
               </View>
             </>
           )}
-          <TouchableOpacity style={[styles.recalcBtn, { backgroundColor: colors.primary }]} onPress={handleRecalculate} activeOpacity={0.85}>
-            <Text style={styles.recalcBtnText}>Пересчитать норму</Text>
-          </TouchableOpacity>
+          {paramsExpanded && (
+            <TouchableOpacity style={[styles.recalcBtn, { backgroundColor: colors.primary }]} onPress={handleRecalculate} activeOpacity={0.85}>
+              <Text style={styles.recalcBtnText}>Пересчитать норму</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Блок веса — разворачивающийся */}
@@ -496,7 +517,51 @@ export default function ProfileScreen() {
             )}
           </Animated.View>
         </View>
+
+        {/* Кнопка выхода — внутри ScrollView, после блока веса */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => {
+            Alert.alert('Выход', 'Точно выйти?', [
+              { text: 'Отмена', style: 'cancel' },
+              { text: 'Выйти', style: 'destructive', onPress: async () => {
+                await useAuthStore.getState().signOut();
+                useUserStore.getState().resetProfile();
+                useFoodStore.getState().resetFoodEntries();
+                router.replace('/');
+              }},
+            ]);
+          }}
+          activeOpacity={0.85}
+        >
+          <MaterialIcons name="logout" size={18} color="#E53935" />
+          <Text style={styles.logoutText}>Выйти</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Модальное окно с результатами пересчёта */}
+      <InfoModal visible={resultsModalVisible} onClose={() => setResultsModalVisible(false)} title="Новая норма">
+        {resultsData && (
+          <View style={styles.resultsBody}>
+            <View style={[styles.resultRow, { backgroundColor: hexToRgba('#D3B0E0', 0.12) }]}>
+              <Text style={[styles.resultLabel, { color: '#D3B0E0' }]}>Калории</Text>
+              <Text style={[styles.resultValue, { color: '#D3B0E0' }]}>{Math.round(resultsData.calories)} ккал</Text>
+            </View>
+            <View style={[styles.resultRow, { backgroundColor: hexToRgba('#53B175', 0.12) }]}>
+              <Text style={[styles.resultLabel, { color: '#53B175' }]}>Белки</Text>
+              <Text style={[styles.resultValue, { color: '#53B175' }]}>{Math.round(resultsData.proteins)} г</Text>
+            </View>
+            <View style={[styles.resultRow, { backgroundColor: hexToRgba('#F8A44C', 0.12) }]}>
+              <Text style={[styles.resultLabel, { color: '#F8A44C' }]}>Жиры</Text>
+              <Text style={[styles.resultValue, { color: '#F8A44C' }]}>{Math.round(resultsData.fats)} г</Text>
+            </View>
+            <View style={[styles.resultRow, { backgroundColor: hexToRgba('#F7A593', 0.12) }]}>
+              <Text style={[styles.resultLabel, { color: '#F7A593' }]}>Углеводы</Text>
+              <Text style={[styles.resultValue, { color: '#F7A593' }]}>{Math.round(resultsData.carbs)} г</Text>
+            </View>
+          </View>
+        )}
+      </InfoModal>
     </MainTabBackground>
   );
 }
@@ -531,9 +596,11 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily('semiBold'), fontSize: 18,
     padding: Platform.select({ ios: 14, android: 12 }),
     borderWidth: 2, borderRadius: 12,
-    textAlign: 'center', flex: 1,
+    textAlign: 'center', width: '100%',
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  nameActionsWrap: { height: 52, justifyContent: 'center', marginTop: 4 },
+  nameActions: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   nameConfirmBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   nameCancelBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   input: {
@@ -623,4 +690,21 @@ const styles = StyleSheet.create({
   recalcBtnText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#fff' },
   autoCalories: { borderRadius: 8, padding: 8, alignItems: 'center', marginBottom: 8 },
   autoCaloriesText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
+
+  // Результаты пересчёта
+  resultsBody: { gap: 8 },
+  resultRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10,
+  },
+  resultLabel: { fontFamily: fontFamily('semiBold'), fontSize: 15 },
+  resultValue: { fontFamily: fontFamily('bold'), fontSize: 17 },
+
+  // Кнопка выхода
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5,
+    backgroundColor: '#FFF0F0', borderColor: '#E53935', marginTop: 8, marginBottom: 20,
+  },
+  logoutText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#E53935' },
 });
