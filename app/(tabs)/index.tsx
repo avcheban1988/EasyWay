@@ -9,9 +9,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
 import { useUserStore } from '@/store/userStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const [editModalMeal, setEditModalMeal] = useState<{ id: string; mealType: string; name: string; proteins: number; fats: number; carbs: number; calories: number } | null>(null);
+  const [editModalPortions, setEditModalPortions] = useState('1');
   const [editModalGrams, setEditModalGrams] = useState('100');
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [dateModalValue, setDateModalValue] = useState('');
@@ -82,12 +84,63 @@ export default function HomeScreen() {
   const dayTotals = getTotalsForDate(selectedDate);
   const isToday = selectedDate === getToday();
 
-  const handlePrevDay = () => setSelectedDate(shiftDate(selectedDate, -1));
-  const handleNextDay = () => {
-    const next = shiftDate(selectedDate, 1);
-    if (next > getToday()) return;
-    setSelectedDate(next);
+  const handlePrevDay = () => {
+    // Анимированный свайп
+    Animated.timing(swipeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      swipeAnim.setValue(0);
+      setSelectedDate(shiftDate(selectedDate, -1));
+    });
   };
+  const handleNextDay = () => {
+    Animated.timing(swipeAnim, {
+      toValue: -1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      swipeAnim.setValue(0);
+      setSelectedDate(shiftDate(selectedDate, 1));
+    });
+  };
+
+  // Анимированный свайп для переключения дат
+  const swipeAnim = useRef(new Animated.Value(0)).current;
+  const dateSwipeResponder = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 5,
+    onPanResponderMove: (_, gs) => {
+      swipeAnim.setValue(gs.dx);
+    },
+    onPanResponderRelease: (_, gs) => {
+      if (gs.dx > 60) {
+        Animated.timing(swipeAnim, {
+          toValue: 300,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          swipeAnim.setValue(0);
+          setSelectedDate(shiftDate(selectedDate, -1));
+        });
+      } else if (gs.dx < -60) {
+        Animated.timing(swipeAnim, {
+          toValue: -300,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          swipeAnim.setValue(0);
+          setSelectedDate(shiftDate(selectedDate, 1));
+        });
+      } else {
+        Animated.spring(swipeAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+  })).current;
 
   const handleDatePress = () => {
     if (Platform.OS === 'web') {
@@ -124,6 +177,7 @@ export default function HomeScreen() {
 
         {dailyMacros && (
           <SurfaceCard style={{ backgroundColor: '#EBF7EE', borderColor: '#53B175' }}>
+            <Animated.View style={{ transform: [{ translateX: swipeAnim }] }} {...dateSwipeResponder.panHandlers}>
             <View style={styles.dateHeader}>
               <TouchableOpacity onPress={handlePrevDay} style={styles.arrowBtn} activeOpacity={0.7}>
                 <MaterialIcons name="chevron-left" size={28} color="#3D8C54" />
@@ -172,6 +226,7 @@ export default function HomeScreen() {
             )}
 
             <MacrosDisplay macros={dailyMacros} todayTotals={dayTotals} />
+            </Animated.View>
           </SurfaceCard>
         )}
 
@@ -233,7 +288,7 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <View style={styles.mealActions}>
-                        <TouchableOpacity onPress={() => { setEditModalGrams('100'); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
+                            <TouchableOpacity onPress={() => { setEditModalPortions('1'); setEditModalGrams('100'); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
                           <MaterialIcons name="edit" size={16} color={colors.icon} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
@@ -260,44 +315,90 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
-      {/* Модалка выбора даты (native) */}
+      {/* Модалка выбора даты */}
       {dateModalVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Введите дату</Text>
-            <Text style={[styles.modalLabel, { color: colors.icon }]}>Формат: ГГГГ-ММ-ДД</Text>
-            <TextInput
-              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="2026-06-26"
-              placeholderTextColor={colors.icon}
-              value={dateModalValue}
-              onChangeText={setDateModalValue}
-              autoFocus
-              selectTextOnFocus
-            />
-            <View style={styles.modalButtons}>
+        <View style={styles.dateModalOverlay}>
+          <View style={[styles.dateModalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Выберите дату</Text>
+
+            <View style={styles.dateModalQuick}>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
-                onPress={() => {
-                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateModalValue)) {
-                    const entries = getEntriesForDate(dateModalValue);
-                    if (entries.length === 0) setToastMsg('В этот день записей не было');
-                    setSelectedDate(dateModalValue);
-                  }
-                  setDateModalVisible(false);
-                }}
+                style={[styles.dateModalChip, { backgroundColor: '#53B175' }]}
+                onPress={() => { setSelectedDate(getToday()); setDateModalVisible(false); }}
                 activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnText}>Выбрать</Text>
+                <MaterialIcons name="today" size={16} color="#fff" />
+                <Text style={styles.dateModalChipText}>Сегодня</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#E53935' }]}
-                onPress={() => setDateModalVisible(false)}
+                style={[styles.dateModalChip, { backgroundColor: '#F8A44C' }]}
+                onPress={() => { setSelectedDate(shiftDate(getToday(), -1)); setDateModalVisible(false); }}
                 activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnText}>Отмена</Text>
+                <MaterialIcons name="yesterday" size={16} color="#fff" />
+                <Text style={styles.dateModalChipText}>Вчера</Text>
               </TouchableOpacity>
             </View>
+
+            {Platform.OS === 'web' ? (
+              <View style={styles.dateModalCalendarWrap}>
+                <input
+                  type="date"
+                  value={dateModalValue}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDateModalValue(val);
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                      const entries = getEntriesForDate(val);
+                      if (entries.length === 0) setToastMsg('В этот день записей не было');
+                      setSelectedDate(val);
+                      setDateModalVisible(false);
+                    }
+                  }}
+                  style={{
+                    fontFamily: fontFamily('regular'),
+                    fontSize: 16,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: `1px solid ${colors.border}`,
+                    width: '100%',
+                    background: colors.background,
+                    color: colors.text,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                  autoFocus
+                />
+              </View>
+            ) : (
+              <DateTimePicker
+                value={new Date(dateModalValue + 'T00:00:00')}
+                mode="date"
+                display="inline"
+                onChange={(_, date) => {
+                  if (date) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    const val = `${y}-${m}-${d}`;
+                    setDateModalValue(val);
+                    const entries = getEntriesForDate(val);
+                    if (entries.length === 0) setToastMsg('В этот день записей не было');
+                    setSelectedDate(val);
+                    setDateModalVisible(false);
+                  }
+                }}
+                themeVariant="light"
+              />
+            )}
+
+            <TouchableOpacity
+              style={[styles.dateModalClose, { borderColor: colors.border }]}
+              onPress={() => setDateModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.dateModalCloseText, { color: colors.icon }]}>Закрыть</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -307,29 +408,43 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>{editModalMeal.name}</Text>
-            <Text style={[styles.modalLabel, { color: colors.icon }]}>Новый вес (грамм):</Text>
-            <TextInput
-              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-              keyboardType="numeric"
-              value={editModalGrams}
-              onChangeText={(v) => setEditModalGrams(v.replace(/[^0-9.]/g, ''))}
-              autoFocus
-              selectTextOnFocus
-            />
+            <View style={styles.editRow}>
+              <View style={styles.editField}>
+                <Text style={[styles.modalLabel, { color: colors.icon }]}>Кол-во</Text>
+                <TextInput
+                  style={[styles.editInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                  keyboardType="decimal-pad"
+                  value={editModalPortions}
+                  onChangeText={(v) => { const clean = v.replace(/[^0-9.,]/g, '').replace(',', '.'); if ((clean.match(/\./g) || []).length <= 1) setEditModalPortions(clean); }}
+                  selectTextOnFocus
+                />
+              </View>
+              <View style={styles.editField}>
+                <Text style={[styles.modalLabel, { color: colors.icon }]}>Грамм</Text>
+                <TextInput
+                  style={[styles.editInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                  keyboardType="decimal-pad"
+                  value={editModalGrams}
+                  onChangeText={(v) => { const clean = v.replace(/[^0-9.,]/g, '').replace(',', '.'); if ((clean.match(/\./g) || []).length <= 1) setEditModalGrams(clean); }}
+                  selectTextOnFocus
+                />
+              </View>
+            </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: '#53B175' }]}
                 onPress={() => {
-                  const val = editModalGrams;
-                  const ratio = Number(val) / 100;
+                  const qty = Number(editModalGrams) || 100;
+                  const count = Number(editModalPortions) || 1;
+                  const ratio = qty / 100;
                   if (ratio > 0 && editModalMeal) {
                     const old = {
                       mealType: editModalMeal.mealType,
                       name: editModalMeal.name,
-                      calories: Math.round(editModalMeal.calories / (editModalMeal.proteins || 1) * (editModalMeal.proteins || 1) * ratio),
-                      proteins: Math.round(editModalMeal.proteins * ratio * 10) / 10,
-                      fats: Math.round(editModalMeal.fats * ratio * 10) / 10,
-                      carbs: Math.round(editModalMeal.carbs * ratio * 10) / 10,
+                      calories: Math.round(editModalMeal.calories * ratio * count),
+                      proteins: Math.round(editModalMeal.proteins * ratio * count * 10) / 10,
+                      fats: Math.round(editModalMeal.fats * ratio * count * 10) / 10,
+                      carbs: Math.round(editModalMeal.carbs * ratio * count * 10) / 10,
                     };
                     removeFoodEntry(editModalMeal.id);
                     addFoodEntry({ ...old, date: selectedDate });
@@ -463,6 +578,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1000,
   },
+  dateModalOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', zIndex: 1000,
+  },
+  dateModalCard: {
+    width: '90%', marginTop: 60, borderRadius: 16, borderWidth: 1, padding: 20,
+  },
+  dateModalQuick: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  dateModalChip: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: 10,
+  },
+  dateModalChipText: { fontFamily: fontFamily('semiBold'), fontSize: 14, color: '#fff' },
+  dateModalCalendarWrap: { marginBottom: 16 },
+  dateModalClose: { paddingVertical: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginTop: 12 },
+  dateModalCloseText: { fontFamily: fontFamily('semiBold'), fontSize: 15 },
   modalContent: {
     width: '85%',
     borderRadius: 16,
@@ -502,5 +633,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily('semiBold'),
     fontSize: 15,
     color: '#fff',
+  },
+  editRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  editField: { flex: 1 },
+  editInput: {
+    fontFamily: fontFamily('regular'), fontSize: 18,
+    padding: 12, borderWidth: 1, borderRadius: 10,
+    textAlign: 'center',
   },
 });

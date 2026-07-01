@@ -9,6 +9,7 @@ export interface Product {
   fatsPer100: number;
   carbsPer100: number;
   packageGrams?: number; // вес упаковки/порции, например 140 для йогурта
+  barcode?: string; // штрихкод
 }
 
 export interface RecipeIngredient {
@@ -32,6 +33,7 @@ interface ProductStore {
   recipes: Recipe[];
   hydrated: boolean;
   load: () => Promise<void>;
+  searchByBarcode: (barcode: string) => Product | undefined;
   addProduct: (p: Omit<Product, 'id'>) => void;
   toggleFavorite: (id: string) => void;
   addRecipe: (r: Omit<Recipe, 'id'>) => void;
@@ -53,6 +55,11 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: '10', name: 'Лосось слабосоленый', caloriesPer100: 200, proteinsPer100: 22, fatsPer100: 12, carbsPer100: 0 },
   { id: '11', name: 'Творог 5%', caloriesPer100: 145, proteinsPer100: 16, fatsPer100: 5, carbsPer100: 3, packageGrams: 200 },
   { id: '12', name: 'Огурец', caloriesPer100: 15, proteinsPer100: 0.7, fatsPer100: 0.1, carbsPer100: 3.6 },
+  { id: '13', name: 'Творог обезжиренный', caloriesPer100: 90, proteinsPer100: 18, fatsPer100: 0.5, carbsPer100: 3.3, packageGrams: 200 },
+  { id: '14', name: 'Макароны тв. сорта', caloriesPer100: 350, proteinsPer100: 12, fatsPer100: 1.5, carbsPer100: 72 },
+  { id: '15', name: 'Гречка', caloriesPer100: 343, proteinsPer100: 13, fatsPer100: 3.4, carbsPer100: 72 },
+  { id: '16', name: 'Масло оливковое', caloriesPer100: 884, proteinsPer100: 0, fatsPer100: 100, carbsPer100: 0 },
+  { id: '17', name: 'Масло сливочное', caloriesPer100: 717, proteinsPer100: 0.9, fatsPer100: 81, carbsPer100: 0.1 },
 ];
 
 const DEFAULT_RECIPES: Recipe[] = [
@@ -107,6 +114,11 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     AsyncStorage.setItem('productStore', JSON.stringify(get()));
   },
 
+  removeProduct: (id) => {
+    set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
+    AsyncStorage.setItem('productStore', JSON.stringify(get()));
+  },
+
   toggleFavorite: (id) => {
     set((s) => {
       const favs = s.favoriteIds.includes(id) ? s.favoriteIds.filter((f) => f !== id) : [...s.favoriteIds, id];
@@ -124,6 +136,10 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   removeRecipe: (id) => {
     set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) }));
     AsyncStorage.setItem('productStore', JSON.stringify(get()));
+  },
+
+  searchByBarcode: (barcode) => {
+    return get().products.find((p) => p.barcode === barcode);
   },
 
   searchProducts: (q) => {

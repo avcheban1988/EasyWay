@@ -29,7 +29,7 @@ export default function ExploreScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { products, favoriteIds, recipes, toggleFavorite, removeRecipe, getRecipeMacros, load: loadProducts } = useProductStore();
+  const { products, favoriteIds, recipes, toggleFavorite, removeProduct, getRecipeMacros, load: loadProducts } = useProductStore();
   const { addFoodEntry } = useFoodStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [favoritesExpanded, setFavoritesExpanded] = useState(false);
@@ -37,7 +37,7 @@ export default function ExploreScreen() {
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17'];
 
   const favoriteProducts = useMemo(() => products.filter((p) => favoriteIds.includes(p.id)), [products, favoriteIds]);
   const displayedFavorites = useMemo(() => favoritesExpanded ? favoriteProducts : favoriteProducts.slice(0, 3), [favoriteProducts, favoritesExpanded]);
@@ -55,6 +55,12 @@ export default function ExploreScreen() {
   const [recipeAddModal, setRecipeAddModal] = useState<{ id: string; name: string; calories: number; proteins: number; fats: number; carbs: number } | null>(null);
   const [recipePortions, setRecipePortions] = useState('1');
   const [recipeMealType, setRecipeMealType] = useState<MealType>('Завтрак');
+  const [editProduct, setEditProduct] = useState<{ id: string; name: string; proteinsPer100: number; fatsPer100: number; carbsPer100: number; packageGrams?: number } | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editProt, setEditProt] = useState('');
+  const [editFat, setEditFat] = useState('');
+  const [editCarb, setEditCarb] = useState('');
+  const [editPackage, setEditPackage] = useState('');
 
   const MEAL_TYPES: MealType[] = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];  
   const MEAL_COLORS: Record<MealType, string> = { 'Завтрак': '#53B175', 'Обед': '#F8A44C', 'Ужин': '#F7A593', 'Перекус': '#D3B0E0' };
@@ -87,23 +93,26 @@ export default function ExploreScreen() {
           {favoriteProducts.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.icon }]}>Нет избранных продуктов</Text>
           ) : (
-            displayedFavorites.map((p) => (
-              <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
-                <View style={styles.productInfo}>
-                  <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
-                  <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
-                </View>
-                <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
-                  <MaterialIcons name="star" size={22} color="#F8A44C" />
+            <>
+              {displayedFavorites.map((p) => (
+                <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
+                  <View style={styles.productInfo}>
+                    <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
+                    <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
+                    <MaterialIcons name="star" size={22} color="#F8A44C" />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-            {favoriteProducts.length > 3 && (
-              <TouchableOpacity style={styles.expandRow} onPress={() => setFavoritesExpanded((v) => !v)} activeOpacity={0.85}>
-                <Text style={[styles.expandText, { color: colors.primary }]}>{favoritesExpanded ? 'Свернуть' : `Еще ${favoriteProducts.length - 3}`}</Text>
-                <MaterialIcons name={favoritesExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
-              </TouchableOpacity>
-            )}
+              ))}
+              {favoriteProducts.length > 3 && (
+                <TouchableOpacity style={styles.expandRow} onPress={() => setFavoritesExpanded((v) => !v)} activeOpacity={0.85}>
+                  <Text style={[styles.expandText, { color: colors.primary }]}>{favoritesExpanded ? 'Свернуть' : `Еще ${favoriteProducts.length - 3}`}</Text>
+                  <MaterialIcons name={favoritesExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
           </View>
 
           {/* Добавленные мной */}
@@ -113,15 +122,29 @@ export default function ExploreScreen() {
                 <MaterialIcons name="playlist-add" size={16} color="#5B8DEF" /> Добавленные мной
               </Text>
               {customProducts.map((p) => (
-                <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
-                    <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
-                    <MaterialIcons name={favoriteIds.includes(p.id) ? 'star' : 'star-outline'} size={22} color={favoriteIds.includes(p.id) ? '#F8A44C' : colors.icon} />
+                <View key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
+                    <View style={styles.productInfo}>
+                      <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
+                      <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
+                    </View>
                   </TouchableOpacity>
-                </TouchableOpacity>
+                  <View style={styles.recipeActions}>
+                    <TouchableOpacity onPress={() => {
+                      setEditName(p.name);
+                      setEditProt(p.proteinsPer100.toString());
+                      setEditFat(p.fatsPer100.toString());
+                      setEditCarb(p.carbsPer100.toString());
+                      setEditPackage(p.packageGrams?.toString() ?? '');
+                      setEditProduct(p);
+                    }} style={styles.actionBtn} activeOpacity={0.7}>
+                      <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { if (Platform.OS === 'web' ? window.confirm(`Удалить «${p.name}»?`) : true) { removeProduct(p.id); } }} style={styles.actionBtn} activeOpacity={0.7}>
+                      <MaterialIcons name="close" size={20} color="#E53935" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ))}
             </View>
           )}
@@ -134,9 +157,10 @@ export default function ExploreScreen() {
           {userRecipes.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.icon }]}>Нет своих рецептов</Text>
           ) : (
-            displayedUserRecipes.map((r) => {
-              const macros = getRecipeMacros(r.id);
-              return (
+            <>
+              {displayedUserRecipes.map((r) => {
+                const macros = getRecipeMacros(r.id);
+                return (
                 <TouchableOpacity key={r.id} style={[styles.recipeItemRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => {
                   if (macros) {
                     setRecipePortions('1');
@@ -168,7 +192,9 @@ export default function ExploreScreen() {
                 <MaterialIcons name={userRecipesExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
               </TouchableOpacity>
             )}
-          </View>
+            </>
+          )}
+        </View>
 
         {/* Готовые рецепты с категориями */}
         <View style={[styles.sectionCard, { backgroundColor: '#F5EEFA', borderColor: '#D3B0E0' }]}>
@@ -274,6 +300,47 @@ export default function ExploreScreen() {
                 onPress={() => setRecipeAddModal(null)}
                 activeOpacity={0.85}
               >
+                <Text style={styles.modalBtnText}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Модалка редактирования продукта */}
+      {editProduct && (
+        <View style={styles.modalOverlayTop}>
+          <View style={[styles.modalContent, { marginTop: 60, backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Редактировать</Text>
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Название</Text>
+            <TextInput style={[styles.modalLabelInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={editName} onChangeText={setEditName} />
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>На 100г:</Text>
+            <View style={styles.editMacroRow}>
+              <View style={styles.editMacroField}><Text style={[styles.editMacroLabel, { color: colors.icon }]}>Белки</Text><TextInput style={[styles.editMacroInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="decimal-pad" value={editProt} onChangeText={(v) => setEditProt(v.replace(/[^0-9.,]/g, '').replace(',', '.'))} /></View>
+              <View style={styles.editMacroField}><Text style={[styles.editMacroLabel, { color: colors.icon }]}>Жиры</Text><TextInput style={[styles.editMacroInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="decimal-pad" value={editFat} onChangeText={(v) => setEditFat(v.replace(/[^0-9.,]/g, '').replace(',', '.'))} /></View>
+              <View style={styles.editMacroField}><Text style={[styles.editMacroLabel, { color: colors.icon }]}>Углев.</Text><TextInput style={[styles.editMacroInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="decimal-pad" value={editCarb} onChangeText={(v) => setEditCarb(v.replace(/[^0-9.,]/g, '').replace(',', '.'))} /></View>
+            </View>
+            <Text style={[styles.modalLabel, { color: colors.icon }]}>Вес упаковки, г (необяз.)</Text>
+            <TextInput style={[styles.modalLabelInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="decimal-pad" value={editPackage} onChangeText={(v) => setEditPackage(v.replace(/[^0-9.,]/g, '').replace(',', '.'))} />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#53B175' }]} onPress={() => {
+                if (!editName.trim() || !editProduct) return;
+                const p = Number(editProt) || 0;
+                const f = Number(editFat) || 0;
+                const c = Number(editCarb) || 0;
+                addProduct({
+                  name: editName.trim(),
+                  caloriesPer100: Math.round(p * 4 + f * 9 + c * 4),
+                  proteinsPer100: p,
+                  fatsPer100: f,
+                  carbsPer100: c,
+                  packageGrams: Number(editPackage) || undefined,
+                });
+                setEditProduct(null);
+              }} activeOpacity={0.85}>
+                <Text style={styles.modalBtnText}>Сохранить как новый</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#E53935' }]} onPress={() => setEditProduct(null)} activeOpacity={0.85}>
                 <Text style={styles.modalBtnText}>Отмена</Text>
               </TouchableOpacity>
             </View>

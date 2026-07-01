@@ -283,8 +283,14 @@ export function SummaryCard() {
       </InfoModal>
 
       <InfoModal visible={helpOpen} onClose={() => setHelpOpen(false)} title="О недельных целях">
+        <Text style={{ ...Typography.body, color: colors.text, marginBottom: 12 }}>
+          Здесь показывается суммарное количество углеводов, белков и жиров за последние 7 дней.
+        </Text>
+        <Text style={{ ...Typography.body, color: colors.text, marginBottom: 12 }}>
+          Цель — приблизиться к недельной норме (сумма дневных целей × 7).
+        </Text>
         <Text style={{ ...Typography.body, color: colors.text }}>
-          Здесь показывается суммарное количество углеводов, белков и жиров за последние 7 дней. Цель — приблизиться к недельной норме (сумма дневных целей × 7). Если в какой-то день вы переели или недоели — не переживайте: важна общая картина к концу недели.
+          Если в какой-то день вы переели или недоели — не переживайте: важна общая картина к концу недели.
         </Text>
       </InfoModal>
     </Animated.View>

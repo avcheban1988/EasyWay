@@ -3,6 +3,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MealType, useFoodStore } from '@/store/foodStore';
 import { Product, useProductStore } from '@/store/productStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -38,7 +39,7 @@ export default function AddFoodScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { addFoodEntry } = useFoodStore();
-  const { products, searchProducts, addProduct, toggleFavorite, favoriteIds, load: loadProducts } = useProductStore();
+  const { products, searchProducts, searchByBarcode, addProduct, toggleFavorite, favoriteIds, load: loadProducts } = useProductStore();
 
   const [mealType, setMealType] = useState<MealType>((params.mealType as MealType) || getDefaultMealType());
   const [mode, setMode] = useState<'scan' | 'photo' | 'manual'>('manual');
@@ -53,6 +54,7 @@ export default function AddFoodScreen() {
   const [manualFat, setManualFat] = useState('');
   const [manualCarb, setManualCarb] = useState('');
   const [manualPackage, setManualPackage] = useState('');
+  const [manualBarcode, setManualBarcode] = useState('');
 
   // Выбранный продукт
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -61,6 +63,8 @@ export default function AddFoodScreen() {
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [barcodeModal, setBarcodeModal] = useState(false);
   const [barcodeValue, setBarcodeValue] = useState('');
+  const [barcodeScanning, setBarcodeScanning] = useState(true);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
@@ -77,11 +81,31 @@ export default function AddFoodScreen() {
     return () => clearTimeout(timerRef.current);
   }, [searchQuery, searchProducts]);
 
-  const handleScanBarcode = () => {
-    // имитация сканирования — показываем модалку с номером штрихкода
-    const mockBarcode = String(Math.floor(Math.random() * 9000000000000) + 1000000000000);
-    setBarcodeValue(mockBarcode);
+  const handleScanBarcode = async () => {
+    if (cameraPermission && !cameraPermission.granted) {
+      const result = await requestCameraPermission();
+      if (!result.granted) return;
+    }
+    setBarcodeValue('');
+    setBarcodeScanning(true);
     setBarcodeModal(true);
+  };
+
+  const handleBarcodeDetected = (code: string) => {
+    setBarcodeScanning(false);
+    setBarcodeValue(code);
+    const found = searchByBarcode(code);
+    if (found) {
+      setTimeout(() => {
+        setBarcodeModal(false);
+        handleSelectProduct(found);
+      }, 800);
+    } else {
+      // Если сканер открыт из формы ручного добавления — подставляем штрихкод
+      if (showManual) {
+        setManualBarcode(code);
+      }
+    }
   };
 
   const handleTakePhoto = () => {
@@ -111,6 +135,7 @@ export default function AddFoodScreen() {
       fatsPer100: f,
       carbsPer100: c,
       packageGrams: Number(manualPackage) || undefined,
+      barcode: manualBarcode || undefined,
     });
     // Создаём локальный объект продукта и сразу выбираем его
     const localProduct: Product = {
@@ -121,6 +146,7 @@ export default function AddFoodScreen() {
       fatsPer100: f,
       carbsPer100: c,
       packageGrams: Number(manualPackage) || undefined,
+      barcode: manualBarcode || undefined,
     };
     setSelectedProduct(localProduct);
     setManualName('');
@@ -128,6 +154,7 @@ export default function AddFoodScreen() {
     setManualFat('');
     setManualCarb('');
     setManualPackage('');
+    setManualBarcode('');
     setShowManual(false);
   };
 
@@ -191,10 +218,10 @@ export default function AddFoodScreen() {
         <TextInput style={[styles.manualInputHalf, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="140" placeholderTextColor={colors.icon} keyboardType="decimal-pad" value={manualPackage} onChangeText={(v) => setManualPackage(v.replace(/[^0-9.,]/g, '').replace(',', '.'))} />
         <Text style={[styles.manualUnit, { color: colors.icon }]}>грамм</Text>
       </View>
-      <Text style={[styles.manualHint, { color: colors.icon }]}>Штрихкод (необязательно)</Text>
+      <Text style={[styles.manualHint, { color: colors.icon }]}>Штрихкод</Text>
       <View style={styles.manualInlineRow}>
-        <TextInput style={[styles.manualInputHalf, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="4612345678901" placeholderTextColor={colors.icon} keyboardType="numeric" />
-        <TouchableOpacity style={[styles.barcodeBtn, { backgroundColor: hexToRgba('#53B175', 0.12), borderColor: '#53B175' }]}>
+        <TextInput style={[styles.manualInputHalf, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} placeholder="———" placeholderTextColor={colors.icon} keyboardType="numeric" value={manualBarcode} onChangeText={setManualBarcode} />
+        <TouchableOpacity style={[styles.barcodeBtn, { backgroundColor: hexToRgba('#53B175', 0.12), borderColor: '#53B175' }]} onPress={() => { setBarcodeValue(''); setBarcodeScanning(true); setBarcodeModal(true); }} activeOpacity={0.85}>
           <MaterialIcons name="qr-code-scanner" size={20} color="#53B175" />
         </TouchableOpacity>
       </View>
@@ -336,19 +363,85 @@ export default function AddFoodScreen() {
         <Text style={[styles.cancelText, { color: colors.icon }]}>Готово</Text>
       </TouchableOpacity>
 
-      {/* Модалка штрихкода */}
+      {/* Модалка сканера штрихкода */}
       {barcodeModal && (
         <View style={styles.barcodeOverlay}>
           <View style={[styles.barcodeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.barcodeTitle, { color: colors.text }]}>Штрихкод</Text>
-            <Text style={[styles.barcodeDigits, { color: colors.text }]}>{barcodeValue}</Text>
-            <Text style={[styles.barcodeHint, { color: colors.icon }]}>Интеграция со сканером будет позже</Text>
+            <Text style={[styles.barcodeTitle, { color: colors.text }]}>Сканер штрихкода</Text>
+
+            {cameraPermission?.granted ? (
+              <>
+                <View style={styles.cameraWrap}>
+                  {barcodeScanning && (
+                    <CameraView
+                      style={styles.camera}
+                      facing="back"
+                      onBarcodeScanned={(result) => {
+                        if (barcodeScanning) {
+                          handleBarcodeDetected(result.data);
+                        }
+                      }}
+                      barcodeScannerSettings={{
+                        barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'code93', 'codabar', 'itf14', 'qr', 'pdf417', 'aztec', 'datamatrix'],
+                      }}
+                    />
+                  )}
+                  {!barcodeScanning && (
+                    <View style={styles.barcodeResult}>
+                      <Text style={[styles.barcodeDigits, { color: colors.text }]}>{barcodeValue}</Text>
+                      {(() => {
+                        const found = searchByBarcode(barcodeValue);
+                        if (found) {
+                          return <Text style={[styles.barcodeFound, { color: '#53B175' }]}>Найден: {found.name}</Text>;
+                        }
+                        return (
+                          <>
+                            <Text style={[styles.barcodeNotFound, { color: colors.icon }]}>Продукт не найден</Text>
+                            <TouchableOpacity
+                              style={[styles.barcodeAddNew, { backgroundColor: '#53B175' }]}
+                              onPress={() => { setBarcodeModal(false); setShowManual(true); }}
+                              activeOpacity={0.85}
+                            >
+                              <Text style={styles.barcodeAddNewText}>Добавить новый продукт</Text>
+                            </TouchableOpacity>
+                          </>
+                        );
+                      })()}
+                    </View>
+                  )}
+                </View>
+
+                {!barcodeScanning && (
+                  <TouchableOpacity
+                    style={[styles.barcodeRescan, { borderColor: colors.primary }]}
+                    onPress={() => setBarcodeScanning(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.barcodeRescanText, { color: colors.primary }]}>Сканировать ещё</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={[styles.barcodeHint, { color: colors.icon }]}>
+                  Нужен доступ к камере для сканирования штрихкодов
+                </Text>
+                <TouchableOpacity
+                  style={[styles.barcodeClose, { backgroundColor: colors.primary }]}
+                  onPress={requestCameraPermission}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.barcodeCloseText}>Разрешить доступ</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
             <TouchableOpacity
-              style={[styles.barcodeClose, { backgroundColor: colors.primary }]}
+              style={[styles.barcodeDismiss, { borderColor: colors.border }]}
               onPress={() => setBarcodeModal(false)}
               activeOpacity={0.85}
             >
-              <Text style={styles.barcodeCloseText}>Закрыть</Text>
+              <Text style={[styles.barcodeDismissText, { color: colors.icon }]}>Закрыть</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -425,20 +518,36 @@ const styles = StyleSheet.create({
   autoCalories: { borderRadius: 8, padding: 8, alignItems: 'center', marginBottom: 8 },
   autoCaloriesText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
 
-  // Модалка штрихкода
+  // Модалка сканера штрихкода
   barcodeOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
   },
   barcodeCard: {
-    width: '85%', borderRadius: 16, borderWidth: 1, padding: 24, alignItems: 'center',
+    width: '90%', borderRadius: 16, borderWidth: 1, padding: 20, alignItems: 'center',
   },
-  barcodeTitle: { fontFamily: fontFamily('bold'), fontSize: 18, marginBottom: 20 },
+  barcodeTitle: { fontFamily: fontFamily('bold'), fontSize: 18, marginBottom: 16 },
+  cameraWrap: {
+    width: '100%', height: 220, borderRadius: 12, overflow: 'hidden', marginBottom: 12,
+  },
+  camera: { flex: 1 },
+  barcodeResult: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#000',
+  },
   barcodeDigits: {
-    fontFamily: fontFamily('bold'), fontSize: 28,
-    letterSpacing: 4, marginBottom: 12,
+    fontFamily: fontFamily('bold'), fontSize: 24,
+    letterSpacing: 3, color: '#fff', textAlign: 'center', paddingHorizontal: 12,
   },
-  barcodeHint: { fontFamily: fontFamily('regular'), fontSize: 13, marginBottom: 20, textAlign: 'center' },
-  barcodeClose: { paddingVertical: 12, paddingHorizontal: 32, borderRadius: 12 },
+  barcodeHint: { fontFamily: fontFamily('regular'), fontSize: 14, marginBottom: 16, textAlign: 'center' },
+  barcodeRescan: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
+  barcodeRescanText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
+  barcodeClose: { paddingVertical: 12, paddingHorizontal: 32, borderRadius: 12, marginBottom: 8 },
   barcodeCloseText: { fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' },
+  barcodeDismiss: { paddingVertical: 10, paddingHorizontal: 24, borderRadius: 10, borderWidth: 1 },
+  barcodeDismissText: { fontFamily: fontFamily('regular'), fontSize: 14 },
+  barcodeFound: { fontFamily: fontFamily('semiBold'), fontSize: 14, marginTop: 8 },
+  barcodeNotFound: { fontFamily: fontFamily('regular'), fontSize: 14, marginTop: 8, marginBottom: 12, textAlign: 'center' },
+  barcodeAddNew: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, marginTop: 4 },
+  barcodeAddNewText: { fontFamily: fontFamily('semiBold'), fontSize: 14, color: '#fff' },
 });
