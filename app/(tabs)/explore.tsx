@@ -37,7 +37,7 @@ export default function ExploreScreen() {
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17'];
+  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12','100','101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','200','201','202','203','204','205','206','207','208','209','210','300','301','302','303','304','305','306','307','308','400','500','501','502','503','504','505','506','507','508','600','601','602','603','700','701','702','703','704','705','706','707','708','709','710','711','712','713','714','715','716','717','800','801','802','803','804','805','806','807','808','809','810','811','900','901','902','903','904','905','906','1000','1001','1002','1003','1004','1005','1006','1007','1008','1009','1010','1011','1012','1013','1100','1101','1102','1103','1200','1201','1202'];
 
   const favoriteProducts = useMemo(() => products.filter((p) => favoriteIds.includes(p.id)), [products, favoriteIds]);
   const displayedFavorites = useMemo(() => favoritesExpanded ? favoriteProducts : favoriteProducts.slice(0, 3), [favoriteProducts, favoritesExpanded]);
@@ -380,8 +380,9 @@ export default function ExploreScreen() {
               selectTextOnFocus
             />
             {favAddProduct.packageGrams && (
-              <TouchableOpacity onPress={() => setFavAddGrams(favAddProduct.packageGrams!.toString())}>
-                <Text style={[styles.packageHint, { color: colors.primary }]}>уп. {favAddProduct.packageGrams}г</Text>
+              <TouchableOpacity onPress={() => setFavAddGrams(favAddProduct.packageGrams!.toString())} style={[styles.pkgChip, { backgroundColor: hexToRgba(colors.primary, 0.12), borderColor: colors.primary }]}>
+                <MaterialIcons name="inventory-2" size={14} color={colors.primary} />
+                <Text style={[styles.pkgChipText, { color: colors.primary }]}>уп. {favAddProduct.packageGrams}г</Text>
               </TouchableOpacity>
             )}
             <View style={styles.modalButtons}>
@@ -463,6 +464,8 @@ const styles = StyleSheet.create({
   recipeActions: { flexDirection: 'row', gap: 6 },
   actionBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   packageHint: { fontFamily: fontFamily('semiBold'), fontSize: 12, textAlign: 'center', marginTop: 4 },
+  pkgChip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, marginTop: 6 },
+  pkgChipText: { fontFamily: fontFamily('semiBold'), fontSize: 12 },
 
   // Модалка
   modalOverlay: {

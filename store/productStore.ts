@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { DEFAULT_PRODUCTS } from './products_list';
 
 export interface Product {
   id: string;
@@ -41,26 +42,6 @@ interface ProductStore {
   searchProducts: (q: string) => Product[];
   getRecipeMacros: (recipeId: string) => { calories: number; proteins: number; fats: number; carbs: number; ingredients: { name: string; grams: number; kcal: number }[] } | null;
 }
-
-const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', name: 'Йогурт греческий', caloriesPer100: 59, proteinsPer100: 10, fatsPer100: 0.5, carbsPer100: 3.5, packageGrams: 140 },
-  { id: '2', name: 'Куриная грудка', caloriesPer100: 165, proteinsPer100: 31, fatsPer100: 3.6, carbsPer100: 0 },
-  { id: '3', name: 'Рис белый', caloriesPer100: 130, proteinsPer100: 2.7, fatsPer100: 0.3, carbsPer100: 28 },
-  { id: '4', name: 'Авокадо', caloriesPer100: 160, proteinsPer100: 2, fatsPer100: 15, carbsPer100: 9 },
-  { id: '5', name: 'Яйцо куриное', caloriesPer100: 155, proteinsPer100: 13, fatsPer100: 11, carbsPer100: 1.1, packageGrams: 60 },
-  { id: '6', name: 'Хлеб цельнозерновой', caloriesPer100: 247, proteinsPer100: 13, fatsPer100: 3.4, carbsPer100: 41 },
-  { id: '7', name: 'Банан', caloriesPer100: 89, proteinsPer100: 1.1, fatsPer100: 0.3, carbsPer100: 23, packageGrams: 120 },
-  { id: '8', name: 'Молоко 3.2%', caloriesPer100: 60, proteinsPer100: 3, fatsPer100: 3.2, carbsPer100: 4.8 },
-  { id: '9', name: 'Овсянка', caloriesPer100: 68, proteinsPer100: 2.5, fatsPer100: 1.5, carbsPer100: 12 },
-  { id: '10', name: 'Лосось слабосоленый', caloriesPer100: 200, proteinsPer100: 22, fatsPer100: 12, carbsPer100: 0 },
-  { id: '11', name: 'Творог 5%', caloriesPer100: 145, proteinsPer100: 16, fatsPer100: 5, carbsPer100: 3, packageGrams: 200 },
-  { id: '12', name: 'Огурец', caloriesPer100: 15, proteinsPer100: 0.7, fatsPer100: 0.1, carbsPer100: 3.6 },
-  { id: '13', name: 'Творог обезжиренный', caloriesPer100: 90, proteinsPer100: 18, fatsPer100: 0.5, carbsPer100: 3.3, packageGrams: 200 },
-  { id: '14', name: 'Макароны тв. сорта', caloriesPer100: 350, proteinsPer100: 12, fatsPer100: 1.5, carbsPer100: 72 },
-  { id: '15', name: 'Гречка', caloriesPer100: 343, proteinsPer100: 13, fatsPer100: 3.4, carbsPer100: 72 },
-  { id: '16', name: 'Масло оливковое', caloriesPer100: 884, proteinsPer100: 0, fatsPer100: 100, carbsPer100: 0 },
-  { id: '17', name: 'Масло сливочное', caloriesPer100: 717, proteinsPer100: 0.9, fatsPer100: 81, carbsPer100: 0.1 },
-];
 
 const DEFAULT_RECIPES: Recipe[] = [
   { id: 'r1', name: 'Овсяноблин', isUserRecipe: false, category: 'breakfast', steps: [], ingredients: [

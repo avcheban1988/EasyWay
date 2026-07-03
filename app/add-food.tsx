@@ -330,8 +330,9 @@ export default function AddFoodScreen() {
               <Text style={[styles.portionLabel, { color: colors.icon }]}>Грамм</Text>
               <TextInput style={[styles.portionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} keyboardType="decimal-pad" value={grams} onChangeText={(v) => { const clean = v.replace(/[^0-9.,]/g, '').replace(',', '.'); if ((clean.match(/\./g) || []).length <= 1) setGrams(clean); }} />
               {selectedProduct.packageGrams && (
-                <TouchableOpacity onPress={() => setGrams(selectedProduct.packageGrams!.toString())}>
-                  <Text style={[styles.packageHint, { color: colors.primary }]}>уп. {selectedProduct.packageGrams}г</Text>
+                <TouchableOpacity onPress={() => setGrams(selectedProduct.packageGrams!.toString())} style={[styles.pkgChip, { backgroundColor: hexToRgba(colors.primary, 0.12), borderColor: colors.primary }]}>
+                  <MaterialIcons name="inventory-2" size={14} color={colors.primary} />
+                  <Text style={[styles.pkgChipText, { color: colors.primary }]}>уп. {selectedProduct.packageGrams}г</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -489,6 +490,8 @@ const styles = StyleSheet.create({
   portionLabel: { fontFamily: fontFamily('regular'), fontSize: 12, marginBottom: 4 },
   portionInput: { fontFamily: fontFamily('regular'), fontSize: 16, padding: Platform.select({ ios: 10, android: 8 }), borderWidth: 1, borderRadius: 8, textAlign: 'center' },
   packageHint: { fontFamily: fontFamily('semiBold'), fontSize: 12, textAlign: 'center', marginTop: 4 },
+  pkgChip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, marginTop: 6 },
+  pkgChipText: { fontFamily: fontFamily('semiBold'), fontSize: 12 },
   macroPreview: { borderRadius: 10, padding: 10, alignItems: 'center', marginBottom: 12 },
   macroPreviewText: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
   addDiaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, gap: 8 },
