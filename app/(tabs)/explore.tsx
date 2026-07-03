@@ -287,6 +287,7 @@ export default function ExploreScreen() {
                     proteins: Math.round(recipeAddModal.proteins * p * 10) / 10,
                     fats: Math.round(recipeAddModal.fats * p * 10) / 10,
                     carbs: Math.round(recipeAddModal.carbs * p * 10) / 10,
+                    grams: Math.round(recipeAddModal.calories * p / (recipeAddModal.calories || 1) * 100),
                   });
                   setToastMsg(`«${recipeAddModal.name}» добавлен в дневник`);
                   setRecipeAddModal(null);
@@ -399,6 +400,7 @@ export default function ExploreScreen() {
                       proteins: Math.round(favAddProduct.proteinsPer100 * mult * 10) / 10,
                       fats: Math.round(favAddProduct.fatsPer100 * mult * 10) / 10,
                       carbs: Math.round(favAddProduct.carbsPer100 * mult * 10) / 10,
+                      grams: qty,
                     });
                     setToastMsg(`«${favAddProduct.name}» добавлен в дневник`);
                   }

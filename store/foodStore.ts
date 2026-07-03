@@ -12,6 +12,7 @@ export interface FoodEntry {
   fats: number;
   carbs: number;
   date: string; // YYYY-MM-DD
+  grams?: number; // вес порции (для редактирования)
 }
 
 interface FoodStore {
@@ -60,6 +61,7 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
       proteins: entry.proteins,
       fats: entry.fats,
       carbs: entry.carbs,
+      grams: entry.grams,
       date,
     };
     set((state) => ({ foodEntries: [...state.foodEntries, newEntry] }));

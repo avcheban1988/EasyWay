@@ -29,7 +29,7 @@ export default function RecipeDetailScreen() {
 
   const handleAddToDiary = () => {
     if (!macros) return;
-    addFoodEntry({ mealType: 'Завтрак', name: recipe.name, calories: macros.calories, proteins: macros.proteins, fats: macros.fats, carbs: macros.carbs });
+    addFoodEntry({ mealType: 'Завтрак', name: recipe.name, calories: macros.calories, proteins: macros.proteins, fats: macros.fats, carbs: macros.carbs, grams: 100 });
     router.back();
   };
 

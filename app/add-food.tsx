@@ -170,6 +170,7 @@ export default function AddFoodScreen() {
       proteins: Math.round(selectedProduct.proteinsPer100 * mult * count * 10) / 10,
       fats: Math.round(selectedProduct.fatsPer100 * mult * count * 10) / 10,
       carbs: Math.round(selectedProduct.carbsPer100 * mult * count * 10) / 10,
+      grams: Number(grams) || 100,
       date: params.date,
     });
     setAddedFeedback(true);

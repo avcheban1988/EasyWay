@@ -54,7 +54,7 @@ export default function HomeScreen() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
-  const [editModalMeal, setEditModalMeal] = useState<{ id: string; mealType: string; name: string; proteins: number; fats: number; carbs: number; calories: number } | null>(null);
+  const [editModalMeal, setEditModalMeal] = useState<{ id: string; mealType: string; name: string; proteins: number; fats: number; carbs: number; calories: number; grams?: number } | null>(null);
   const [editModalPortions, setEditModalPortions] = useState('1');
   const [editModalGrams, setEditModalGrams] = useState('100');
   const [dateModalVisible, setDateModalVisible] = useState(false);
@@ -288,7 +288,7 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <View style={styles.mealActions}>
-                            <TouchableOpacity onPress={() => { setEditModalPortions('1'); setEditModalGrams('100'); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
+                            <TouchableOpacity onPress={() => { setEditModalPortions('1'); setEditModalGrams((meal.grams ?? 100).toString()); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
                           <MaterialIcons name="edit" size={16} color={colors.icon} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
@@ -436,15 +436,24 @@ export default function HomeScreen() {
                 onPress={() => {
                   const qty = Number(editModalGrams) || 100;
                   const count = Number(editModalPortions) || 1;
-                  const ratio = qty / 100;
-                  if (ratio > 0 && editModalMeal) {
+                  if (qty > 0 && editModalMeal) {
+                    // Пересчитываем макросы через per-100g: original / (origGrams/100)
+                    const origGrams = editModalMeal.grams || 100;
+                    const per100 = {
+                      calories: editModalMeal.calories / (origGrams / 100),
+                      proteins: editModalMeal.proteins / (origGrams / 100),
+                      fats: editModalMeal.fats / (origGrams / 100),
+                      carbs: editModalMeal.carbs / (origGrams / 100),
+                    };
+                    const mult = qty / 100;
                     const old = {
                       mealType: editModalMeal.mealType,
                       name: editModalMeal.name,
-                      calories: Math.round(editModalMeal.calories * ratio * count),
-                      proteins: Math.round(editModalMeal.proteins * ratio * count * 10) / 10,
-                      fats: Math.round(editModalMeal.fats * ratio * count * 10) / 10,
-                      carbs: Math.round(editModalMeal.carbs * ratio * count * 10) / 10,
+                      calories: Math.round(per100.calories * mult * count),
+                      proteins: Math.round(per100.proteins * mult * count * 10) / 10,
+                      fats: Math.round(per100.fats * mult * count * 10) / 10,
+                      carbs: Math.round(per100.carbs * mult * count * 10) / 10,
+                      grams: qty,
                     };
                     removeFoodEntry(editModalMeal.id);
                     addFoodEntry({ ...old, date: selectedDate });
