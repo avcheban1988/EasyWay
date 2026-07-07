@@ -24,7 +24,7 @@ export default function ActivityScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>
             Ваш уровень активности
@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     flexGrow: 1,
+    paddingBottom: 120,
   },
   header: {
     marginBottom: 24,

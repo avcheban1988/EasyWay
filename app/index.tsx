@@ -21,8 +21,7 @@ export default function Index() {
 
     const initializeApp = async () => {
       await checkAuth();
-      const accountEmail = useAuthStore.getState().account?.email ?? null;
-      await loadProfile(accountEmail);
+      await loadProfile();
 
       const profile = useUserStore.getState().userProfile;
       if (profile.isOnboarded) {
@@ -30,8 +29,8 @@ export default function Index() {
         return;
       }
 
-      // Skip the old welcome screen — go directly to auth or next onboarding step
-      if (accountEmail) {
+      const { account } = useAuthStore.getState();
+      if (account) {
         const next = getNextOnboardingRoute(profile);
         router.replace(next);
       } else {

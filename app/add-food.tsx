@@ -77,7 +77,7 @@ export default function AddFoodScreen() {
     timerRef.current = setTimeout(() => {
       setResults(searchProducts(searchQuery));
       setSearching(false);
-    }, 2000);
+    }, 300);
     return () => clearTimeout(timerRef.current);
   }, [searchQuery, searchProducts]);
 
@@ -123,23 +123,12 @@ export default function AddFoodScreen() {
     setPortions('1');
   };
 
-  const handleAddCustomProduct = () => {
+  const handleAddCustomProduct = async () => {
     if (!manualName.trim()) return;
     const p = Number(manualProt) || 0;
     const f = Number(manualFat) || 0;
     const c = Number(manualCarb) || 0;
-    addProduct({
-      name: manualName.trim(),
-      caloriesPer100: p * 4 + f * 9 + c * 4,
-      proteinsPer100: p,
-      fatsPer100: f,
-      carbsPer100: c,
-      packageGrams: Number(manualPackage) || undefined,
-      barcode: manualBarcode || undefined,
-    });
-    // Создаём локальный объект продукта и сразу выбираем его
-    const localProduct: Product = {
-      id: `tmp-${Date.now()}`,
+    const newProduct = {
       name: manualName.trim(),
       caloriesPer100: p * 4 + f * 9 + c * 4,
       proteinsPer100: p,
@@ -148,7 +137,16 @@ export default function AddFoodScreen() {
       packageGrams: Number(manualPackage) || undefined,
       barcode: manualBarcode || undefined,
     };
-    setSelectedProduct(localProduct);
+    // Ждём сохранения в БД
+    await addProduct(newProduct);
+    // Ищем продукт в локальном списке (через свежее состояние стора)
+    const freshProducts = useProductStore.getState().products;
+    const found = freshProducts.find((pr) => pr.name === manualName.trim());
+    if (found) {
+      setSelectedProduct(found);
+      setGrams(found.packageGrams?.toString() ?? '100');
+      setPortions('1');
+    }
     setManualName('');
     setManualProt('');
     setManualFat('');
@@ -401,7 +399,7 @@ export default function AddFoodScreen() {
                             <Text style={[styles.barcodeNotFound, { color: colors.icon }]}>Продукт не найден</Text>
                             <TouchableOpacity
                               style={[styles.barcodeAddNew, { backgroundColor: '#53B175' }]}
-                              onPress={() => { setBarcodeModal(false); setShowManual(true); }}
+                              onPress={() => { setBarcodeModal(false); setSearchQuery(' '); setShowManual(true); }}
                               activeOpacity={0.85}
                             >
                               <Text style={styles.barcodeAddNewText}>Добавить новый продукт</Text>

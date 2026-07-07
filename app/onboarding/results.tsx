@@ -11,15 +11,22 @@ export default function ResultsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const { dailyMacros, calculateMacros, saveProfile, setIsOnboarded } = useUserStore();
+  const { userProfile, dailyMacros, calculateMacros, saveProfile, setIsOnboarded } = useUserStore();
 
   useEffect(() => {
-    calculateMacros();
-  }, [calculateMacros]);
+    // Если выбраны свои БЖУ — не пересчитываем
+    if (userProfile.goal !== 'manual') {
+      calculateMacros();
+    }
+  }, [userProfile.goal, calculateMacros]);
 
   const handleStartTracking = async () => {
     setIsOnboarded(true);
-    await saveProfile();
+    try {
+      await saveProfile();
+    } catch (e) {
+      console.warn('saveProfile error (ignored):', e);
+    }
     router.replace('/(tabs)');
   };
 

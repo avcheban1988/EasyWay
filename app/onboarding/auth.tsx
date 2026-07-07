@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
 import { useUserStore } from '@/store/userStore';
 import { getNextOnboardingRoute } from '@/utils/get-next-route';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -311,7 +312,7 @@ export default function AuthScreen() {
 
                 <Animated.View style={[styles.nextFabWrap, { opacity: phoneAnim }]} pointerEvents={phoneFocused ? 'auto' : 'none'}>
                   <PressableScale style={[styles.nextFab, styles.buttonShadow]} onPress={handleSubmit}>
-                    <Image source={require('../../assets/images/RegAuth/arrowNext.svg')} style={styles.nextFabIcon} />
+                    <MaterialIcons name="arrow-forward" size={28} color="#fff" />
                   </PressableScale>
                 </Animated.View>
               </Animated.View>

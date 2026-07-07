@@ -63,10 +63,8 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!rootNavigationState?.key) return;
     const initialize = async () => {
-      const { account } = useAuthStore.getState();
-      const accountEmail = account?.email ?? null;
-      await loadProfile(accountEmail);
-      await loadFoodEntries(accountEmail);
+      await loadProfile();
+      await loadFoodEntries();
     };
     initialize();
   }, [checkAuth, loadFoodEntries, loadProfile, rootNavigationState?.key, router]);

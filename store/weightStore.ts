@@ -1,9 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '@/lib/api';
 import { create } from 'zustand';
 
 export interface WeightEntry {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   weight: number;
 }
 
@@ -15,57 +15,42 @@ interface WeightStore {
   removeEntry: (id: string) => Promise<void>;
 }
 
-const STORAGE_KEY = 'weightEntries';
-
 export const useWeightStore = create<WeightStore>((set, get) => ({
   entries: [],
   hydrated: false,
 
   loadEntries: async () => {
+    if (get().hydrated) return;
     try {
-      if (get().hydrated) return;
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
-      if (json) {
-        const parsed: WeightEntry[] = JSON.parse(json);
-        set({ entries: parsed, hydrated: true });
-      } else {
-        set({ entries: [], hydrated: true });
-      }
-    } catch (e) {
-      console.error('Error loading weight entries', e);
+      const entries = await api.getWeightEntries();
+      set({ entries, hydrated: true });
+    } catch {
       set({ entries: [], hydrated: true });
     }
   },
 
   addEntry: async (weight, date) => {
     try {
+      const created = await api.addWeightEntry(weight, date);
+      // Обновляем или добавляем
+      set((s) => {
+        const filtered = s.entries.filter((e) => e.date !== created.date);
+        return { entries: [created, ...filtered] };
+      });
+    } catch {
       const d = date ?? new Date().toISOString().slice(0, 10);
-      const existing = get().entries.find((e) => e.date === d);
-      let newArr: WeightEntry[];
-      if (existing) {
-        // Перезаписываем существующую запись за этот день
-        newArr = get().entries.map((e) => e.id === existing.id ? { ...e, weight } : e);
-      } else {
-        const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, date: d, weight };
-        newArr = [entry, ...get().entries];
-      }
-      newArr.sort((a, b) => (a.date < b.date ? 1 : -1));
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newArr));
-      set({ entries: newArr });
-    } catch (e) {
-      console.error('Error saving weight entry', e);
+      const entry = { id: `tmp-${Date.now()}`, date: d, weight };
+      set((s) => {
+        const filtered = s.entries.filter((e) => e.date !== d);
+        return { entries: [entry, ...filtered] };
+      });
     }
   },
 
   removeEntry: async (id) => {
     try {
-      const filtered = get().entries.filter((e) => e.id !== id);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-      set({ entries: filtered });
-    } catch (e) {
-      console.error('Error removing weight entry', e);
-    }
+      await api.deleteProduct(id);
+    } catch {}
+    set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
   },
 }));
-
-export default useWeightStore;

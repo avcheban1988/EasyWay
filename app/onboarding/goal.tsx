@@ -122,8 +122,8 @@ export default function GoalScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Цели</Text>

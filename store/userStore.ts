@@ -1,11 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '@/lib/api';
 import { create } from 'zustand';
 
-// Типы для хранения пользовательских данных
 export type GoalType = 'lose' | 'maintain' | 'gain' | 'manual';
-
 export type GenderType = 'male' | 'female';
-
 export type ActivityLevelType = 'minimal' | 'light' | 'moderate' | 'high' | 'extreme';
 
 export interface UserProfile {
@@ -32,7 +29,6 @@ export interface DailyMacros {
 }
 
 interface UserStore {
-  activeEmail: string | null;
   userProfile: UserProfile;
   dailyMacros: DailyMacros | null;
   profileHydrated: boolean;
@@ -49,7 +45,7 @@ interface UserStore {
   setManualMacros: (proteins: number, fats: number, carbs: number) => void;
   calculateMacros: () => void;
   resetProfile: () => void;
-  loadProfile: (email?: string | null) => Promise<void>;
+  loadProfile: () => Promise<void>;
   saveProfile: () => Promise<void>;
 }
 
@@ -69,75 +65,61 @@ const defaultProfile: UserProfile = {
   manualCarbs: null,
 };
 
+function mapApiToProfile(u: any): UserProfile {
+  return {
+    name: u.name || '',
+    goal: u.goal || null,
+    gender: u.gender || null,
+    age: u.age ?? null,
+    height: u.height ?? null,
+    weight: u.weight ?? null,
+    activityLevel: u.activity_level || null,
+    gymDaysPerWeek: u.gym_days_per_week ?? null,
+    isMassGainMode: !!u.is_mass_gain_mode,
+    isOnboarded: !!u.is_onboarded,
+    manualProteins: u.manual_proteins ?? null,
+    manualFats: u.manual_fats ?? null,
+    manualCarbs: u.manual_carbs ?? null,
+  };
+}
+
+function mapApiToMacros(u: any): DailyMacros | null {
+  if (u.daily_calories == null) return null;
+  return {
+    calories: u.daily_calories,
+    proteins: u.daily_proteins || 0,
+    fats: u.daily_fats || 0,
+    carbs: u.daily_carbs || 0,
+  };
+}
+
 export const useUserStore = create<UserStore>((set, get) => ({
-  activeEmail: null,
   userProfile: defaultProfile,
   dailyMacros: null,
   profileHydrated: false,
 
-  setGoal: (goal) => set((state) => ({
-    userProfile: { ...state.userProfile, goal }
+  setGoal: (goal) => set((s) => ({ userProfile: { ...s.userProfile, goal } })),
+  setName: (name) => set((s) => ({ userProfile: { ...s.userProfile, name } })),
+  setGender: (gender) => set((s) => ({ userProfile: { ...s.userProfile, gender } })),
+  setAge: (age) => set((s) => ({ userProfile: { ...s.userProfile, age } })),
+  setHeight: (height) => set((s) => ({ userProfile: { ...s.userProfile, height } })),
+  setWeight: (weight) => set((s) => ({ userProfile: { ...s.userProfile, weight } })),
+  setActivityLevel: (activityLevel) => set((s) => ({ userProfile: { ...s.userProfile, activityLevel } })),
+  setGymDaysPerWeek: (gymDaysPerWeek) => set((s) => ({ userProfile: { ...s.userProfile, gymDaysPerWeek } })),
+  setMassGainMode: (isMassGainMode) => set((s) => ({ userProfile: { ...s.userProfile, isMassGainMode } })),
+
+  setManualMacros: (proteins, fats, carbs) => set((s) => ({
+    userProfile: { ...s.userProfile, manualProteins: proteins, manualFats: fats, manualCarbs: carbs },
+    dailyMacros: { calories: proteins * 4 + fats * 9 + carbs * 4, proteins, fats, carbs },
   })),
 
-  setGender: (gender) => set((state) => ({
-    userProfile: { ...state.userProfile, gender }
-  })),
-
-  setName: (name) => set((state) => ({
-    userProfile: { ...state.userProfile, name }
-  })),
-
-  setAge: (age) => set((state) => ({
-    userProfile: { ...state.userProfile, age }
-  })),
-
-  setHeight: (height) => set((state) => ({
-    userProfile: { ...state.userProfile, height }
-  })),
-
-  setWeight: (weight) => set((state) => ({
-    userProfile: { ...state.userProfile, weight }
-  })),
-
-  setActivityLevel: (activityLevel) => set((state) => ({
-    userProfile: { ...state.userProfile, activityLevel }
-  })),
-
-  setGymDaysPerWeek: (gymDaysPerWeek) => set((state) => ({
-    userProfile: { ...state.userProfile, gymDaysPerWeek }
-  })),
-
-  setMassGainMode: (isMassGainMode) => set((state) => ({
-    userProfile: { ...state.userProfile, isMassGainMode }
-  })),
-
-  setManualMacros: (proteins, fats, carbs) => set((state) => ({
-    userProfile: {
-      ...state.userProfile,
-      manualProteins: proteins,
-      manualFats: fats,
-      manualCarbs: carbs,
-    },
-    dailyMacros: {
-      calories: proteins * 4 + fats * 9 + carbs * 4,
-      proteins,
-      fats,
-      carbs,
-    },
-  })),
-
-  setIsOnboarded: (isOnboarded) => set((state) => ({
-    userProfile: { ...state.userProfile, isOnboarded }
-  })),
+  setIsOnboarded: (isOnboarded) => set((s) => ({ userProfile: { ...s.userProfile, isOnboarded } })),
 
   calculateMacros: () => {
     const { userProfile } = get();
-    if (!userProfile.gender || !userProfile.age || !userProfile.height || 
-        !userProfile.weight || !userProfile.activityLevel) {
-      return;
-    }
+    if (!userProfile.gender || !userProfile.age || !userProfile.height ||
+        !userProfile.weight || !userProfile.activityLevel) return;
 
-    // Формула Миффлина-Сан-Жеора для BMR
     let bmr: number;
     if (userProfile.gender === 'male') {
       bmr = 10 * userProfile.weight + 6.25 * userProfile.height - 5 * userProfile.age + 5;
@@ -145,34 +127,19 @@ export const useUserStore = create<UserStore>((set, get) => ({
       bmr = 10 * userProfile.weight + 6.25 * userProfile.height - 5 * userProfile.age - 161;
     }
 
-    // Коэффициенты активности
-    const activityMultipliers = {
-      minimal: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      high: 1.725,
-      extreme: 1.9,
+    const activityMultipliers: Record<string, number> = {
+      minimal: 1.2, light: 1.375, moderate: 1.55, high: 1.725, extreme: 1.9,
     };
 
-    // Базовая калорийность с учетом активности
-    let dailyCalories = bmr * activityMultipliers[userProfile.activityLevel];
+    let dailyCalories = bmr * (activityMultipliers[userProfile.activityLevel] || 1.55);
 
-    // Корректировка в зависимости от цели
-    if (userProfile.goal === 'lose') {
-      dailyCalories -= 500; // Дефицит для похудения
-    } else if (userProfile.goal === 'gain') {
-      dailyCalories += 300; // Профицит для набора массы
-    }
+    if (userProfile.goal === 'lose') dailyCalories -= 500;
+    else if (userProfile.goal === 'gain') dailyCalories += 300;
 
-    // Расчет белков
     const isActive = userProfile.gymDaysPerWeek !== null && userProfile.gymDaysPerWeek >= 3;
     const proteinPerKg = isActive || userProfile.isMassGainMode ? 2.0 : 1.3;
     const proteins = userProfile.weight * proteinPerKg;
-
-    // Расчет жиров
     const fats = userProfile.weight * 0.9;
-
-    // Расчет углеводов (остаток калорий)
     const proteinCalories = proteins * 4;
     const fatCalories = fats * 9;
     const carbCalories = dailyCalories - proteinCalories - fatCalories;
@@ -188,74 +155,69 @@ export const useUserStore = create<UserStore>((set, get) => ({
     });
   },
 
-  resetProfile: () => set({
-    userProfile: defaultProfile,
-    dailyMacros: null,
-    profileHydrated: false,
-  }),
+  resetProfile: () => set({ userProfile: defaultProfile, dailyMacros: null }),
 
-  loadProfile: async (email?: string | null) => {
+  loadProfile: async () => {
     try {
-      const activeEmail = email ?? null;
-      const normalizedEmail = activeEmail ? activeEmail.trim().toLowerCase() : null;
-
-      const currentNormalizedEmail = get().activeEmail?.trim().toLowerCase() ?? null;
-      if (get().profileHydrated && currentNormalizedEmail === normalizedEmail) return;
-
-      set({ activeEmail: activeEmail ?? null, profileHydrated: false });
-
-      const profileKey = normalizedEmail ? `userProfile:${normalizedEmail}` : 'userProfile';
-      const macrosKey = normalizedEmail ? `dailyMacros:${normalizedEmail}` : 'dailyMacros';
-
-      const legacyProfileJson = normalizedEmail ? await AsyncStorage.getItem('userProfile') : null;
-      const legacyMacrosJson = normalizedEmail ? await AsyncStorage.getItem('dailyMacros') : null;
-
-      const profileJson = await AsyncStorage.getItem(profileKey);
-      const macrosJson = await AsyncStorage.getItem(macrosKey);
-
-      if (profileJson) {
-        set({
-          userProfile: JSON.parse(profileJson),
-        });
-      } else if (legacyProfileJson) {
-        // Backward compatibility: if there is old global profile on device.
-        set({
-          userProfile: JSON.parse(legacyProfileJson),
-        });
-      }
-
-      if (macrosJson) {
-        set({
-          dailyMacros: JSON.parse(macrosJson),
-        });
-      } else if (legacyMacrosJson) {
-        set({
-          dailyMacros: JSON.parse(legacyMacrosJson),
-        });
-      }
-
-      set({ profileHydrated: true });
-    } catch (error) {
-      console.error('Error loading profile:', error);
+      const u = await api.getProfile();
+      set({
+        userProfile: mapApiToProfile(u),
+        dailyMacros: mapApiToMacros(u),
+        profileHydrated: true,
+      });
+    } catch {
       set({ profileHydrated: true });
     }
   },
 
   saveProfile: async () => {
+    const { userProfile, dailyMacros } = get();
+    // Если нет токена — не шлём запрос (офлайн-режим)
+    if (!api.getToken()) {
+      console.warn('saveProfile: нет токена, пропускаем');
+      return;
+    }
+    const data: any = {
+      name: userProfile.name,
+      goal: userProfile.goal,
+      gender: userProfile.gender,
+      age: userProfile.age,
+      height: userProfile.height,
+      weight: userProfile.weight,
+      activity_level: userProfile.activityLevel,
+      gym_days_per_week: userProfile.gymDaysPerWeek,
+      is_mass_gain_mode: userProfile.isMassGainMode,
+      is_onboarded: userProfile.isOnboarded,
+    };
+    if (userProfile.goal === 'manual') {
+      data.manual_proteins = userProfile.manualProteins;
+      data.manual_fats = userProfile.manualFats;
+      data.manual_carbs = userProfile.manualCarbs;
+    }
+    if (dailyMacros) {
+      data.daily_calories = dailyMacros.calories;
+      data.daily_proteins = dailyMacros.proteins;
+      data.daily_fats = dailyMacros.fats;
+      data.daily_carbs = dailyMacros.carbs;
+    }
     try {
-      const normalizedEmail = get().activeEmail?.trim().toLowerCase() ?? null;
-      const profileKey = normalizedEmail ? `userProfile:${normalizedEmail}` : 'userProfile';
-      const macrosKey = normalizedEmail ? `dailyMacros:${normalizedEmail}` : 'dailyMacros';
-
-      const { userProfile, dailyMacros } = get();
-      await AsyncStorage.setItem(profileKey, JSON.stringify(userProfile));
-      if (dailyMacros) {
-        await AsyncStorage.setItem(macrosKey, JSON.stringify(dailyMacros));
-      }
-
-      set({ profileHydrated: true });
-    } catch (error) {
-      console.error('Error saving profile:', error);
+      const result = await api.updateProfile(data);
+      // Обновляем данные из ответа
+      set({
+        userProfile: {
+          ...userProfile,
+          name: result.name || '',
+          goal: result.goal || userProfile.goal,
+        },
+        dailyMacros: result.daily_calories ? {
+          calories: result.daily_calories,
+          proteins: result.daily_proteins || 0,
+          fats: result.daily_fats || 0,
+          carbs: result.daily_carbs || 0,
+        } : dailyMacros,
+      });
+    } catch (e: any) {
+      console.warn('saveProfile error (ignored):', e?.message || e);
     }
   },
 }));

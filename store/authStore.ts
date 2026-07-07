@@ -1,5 +1,6 @@
-import { create } from 'zustand';
+import { api } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
 
 export interface AuthAccount {
   email: string;
@@ -8,6 +9,7 @@ export interface AuthAccount {
 
 interface AuthStore {
   account: AuthAccount | null;
+  token: string | null;
   status: 'idle' | 'checking' | 'authenticated' | 'unauthenticated';
   hydrated: boolean;
   checkAuth: () => Promise<void>;
@@ -16,61 +18,71 @@ interface AuthStore {
   signOut: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'authAccount';
-
+const TOKEN_KEY = 'authToken';
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   account: null,
+  token: null,
   status: 'idle',
   hydrated: false,
 
   checkAuth: async () => {
     if (get().hydrated) return;
-
     set({ status: 'checking' });
 
     try {
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
-      if (!json) {
-        set({ account: null, status: 'unauthenticated', hydrated: true });
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        set({ account: null, token: null, status: 'unauthenticated', hydrated: true });
         return;
       }
-
-      const parsed = JSON.parse(json) as Partial<AuthAccount>;
-      if (parsed && typeof parsed.email === 'string' && typeof parsed.createdAt === 'string') {
-        set({ account: { email: parsed.email, createdAt: parsed.createdAt }, status: 'authenticated', hydrated: true });
-        return;
-      }
-
-      // Corrupted storage - reset.
-      await AsyncStorage.removeItem(STORAGE_KEY);
-      set({ account: null, status: 'unauthenticated', hydrated: true });
-    } catch (e) {
-      console.error('Error checking auth:', e);
-      set({ account: null, status: 'unauthenticated', hydrated: true });
+      api.setToken(token);
+      const user = await api.getProfile();
+      set({
+        account: { email: user.email, createdAt: new Date().toISOString() },
+        token,
+        status: 'authenticated',
+        hydrated: true,
+      });
+    } catch {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      set({ account: null, token: null, status: 'unauthenticated', hydrated: true });
     }
   },
 
-  signUp: async ({ email }) => {
-    const createdAt = new Date().toISOString();
-    const account: AuthAccount = { email: normalizeEmail(email), createdAt };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(account));
-    set({ account, status: 'authenticated', hydrated: true });
+  signUp: async ({ email, password }) => {
+    const res = await api.register(email, password);
+    api.setToken(res.token);
+    await AsyncStorage.setItem(TOKEN_KEY, res.token);
+    set({
+      account: { email: normalizeEmail(email), createdAt: new Date().toISOString() },
+      token: res.token,
+      status: 'authenticated',
+      hydrated: true,
+    });
   },
 
-  // Local prototype: accept any valid email/password combination for now (no backend validation)
-  signIn: async ({ email }) => {
-    const createdAt = new Date().toISOString();
-    const account: AuthAccount = { email: normalizeEmail(email), createdAt };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(account));
-    set({ account, status: 'authenticated', hydrated: true });
-    return true;
+  signIn: async ({ email, password }) => {
+    try {
+      const res = await api.login(email, password);
+      api.setToken(res.token);
+      await AsyncStorage.setItem(TOKEN_KEY, res.token);
+      set({
+        account: { email: normalizeEmail(email), createdAt: new Date().toISOString() },
+        token: res.token,
+        status: 'authenticated',
+        hydrated: true,
+      });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   signOut: async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    set({ account: null, status: 'unauthenticated' });
+    api.setToken(null);
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    set({ account: null, token: null, status: 'unauthenticated' });
   },
 }));
-

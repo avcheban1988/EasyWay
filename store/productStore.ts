@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '@/lib/api';
 import { create } from 'zustand';
 import { DEFAULT_PRODUCTS } from './products_list';
 
@@ -9,8 +9,9 @@ export interface Product {
   proteinsPer100: number;
   fatsPer100: number;
   carbsPer100: number;
-  packageGrams?: number; // вес упаковки/порции, например 140 для йогурта
-  barcode?: string; // штрихкод
+  packageGrams?: number;
+  barcode?: string;
+  isFavorite?: boolean;
 }
 
 export interface RecipeIngredient {
@@ -26,6 +27,7 @@ export interface Recipe {
   steps: string[];
   isUserRecipe: boolean;
   category?: 'breakfast' | 'lunch' | 'dinner' | 'high_carb' | 'high_protein' | 'high_fat';
+  macros?: { calories: number; proteins: number; fats: number; carbs: number };
 }
 
 interface ProductStore {
@@ -35,7 +37,8 @@ interface ProductStore {
   hydrated: boolean;
   load: () => Promise<void>;
   searchByBarcode: (barcode: string) => Product | undefined;
-  addProduct: (p: Omit<Product, 'id'>) => void;
+  addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
+  removeProduct: (id: string) => void;
   toggleFavorite: (id: string) => void;
   addRecipe: (r: Omit<Recipe, 'id'>) => void;
   removeRecipe: (id: string) => void;
@@ -43,80 +46,37 @@ interface ProductStore {
   getRecipeMacros: (recipeId: string) => { calories: number; proteins: number; fats: number; carbs: number; ingredients: { name: string; grams: number; kcal: number }[] } | null;
 }
 
-const DEFAULT_RECIPES: Recipe[] = [
-  { id: 'r1', name: 'Овсяноблин', isUserRecipe: false, category: 'breakfast', steps: [], ingredients: [
-    { productId: '9', productName: 'Овсянка', grams: 30 }, { productId: '5', productName: 'Яйцо куриное', grams: 60 }
-  ]},
-  { id: 'r2', name: 'Курица с рисом и овощами', isUserRecipe: false, category: 'lunch', steps: [], ingredients: [
-    { productId: '2', productName: 'Куриная грудка', grams: 150 }, { productId: '3', productName: 'Рис белый', grams: 100 }, { productId: '12', productName: 'Огурец', grams: 50 }
-  ]},
-  { id: 'r3', name: 'Смузи банановый', isUserRecipe: false, category: 'breakfast', steps: [], ingredients: [
-    { productId: '7', productName: 'Банан', grams: 120 }, { productId: '8', productName: 'Молоко 3.2%', grams: 200 }
-  ]},
-  { id: 'r4', name: 'Творожная запеканка', isUserRecipe: false, category: 'breakfast', steps: [], ingredients: [
-    { productId: '11', productName: 'Творог 5%', grams: 200 }, { productId: '5', productName: 'Яйцо куриное', grams: 60 }
-  ]},
-  { id: 'r5', name: 'Лосось с авокадо', isUserRecipe: false, category: 'dinner', steps: [], ingredients: [
-    { productId: '10', productName: 'Лосось слабосоленый', grams: 100 }, { productId: '4', productName: 'Авокадо', grams: 80 }
-  ]},
-  { id: 'r6', name: 'Протеиновый завтрак', isUserRecipe: false, category: 'high_protein', steps: [], ingredients: [
-    { productId: '11', productName: 'Творог 5%', grams: 200 }, { productId: '5', productName: 'Яйцо куриное', grams: 120 }
-  ]},
-  { id: 'r7', name: 'Энергетический рис', isUserRecipe: false, category: 'high_carb', steps: [], ingredients: [
-    { productId: '3', productName: 'Рис белый', grams: 200 }, { productId: '7', productName: 'Банан', grams: 120 }
-  ]},
-  { id: 'r8', name: 'Авокадо-тост', isUserRecipe: false, category: 'high_fat', steps: [], ingredients: [
-    { productId: '6', productName: 'Хлеб цельнозерновой', grams: 50 }, { productId: '4', productName: 'Авокадо', grams: 100 }
-  ]},
-];
-
 export const useProductStore = create<ProductStore>((set, get) => ({
   products: DEFAULT_PRODUCTS,
   favoriteIds: [],
-  recipes: DEFAULT_RECIPES,
+  recipes: [],
   hydrated: false,
 
   load: async () => {
+    if (get().hydrated) return;
     try {
-      if (get().hydrated) return;
-      const json = await AsyncStorage.getItem('productStore');
-      if (json) {
-        const parsed = JSON.parse(json);
-        set({ products: parsed.products ?? DEFAULT_PRODUCTS, favoriteIds: parsed.favoriteIds ?? [], recipes: parsed.recipes ?? [], hydrated: true });
-      } else {
-        set({ hydrated: true });
-      }
-    } catch { set({ hydrated: true }); }
-  },
-
-  addProduct: (p) => {
-    const newP: Product = { ...p, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` };
-    set((s) => ({ products: [...s.products, newP] }));
-    AsyncStorage.setItem('productStore', JSON.stringify(get()));
-  },
-
-  removeProduct: (id) => {
-    set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
-    AsyncStorage.setItem('productStore', JSON.stringify(get()));
-  },
-
-  toggleFavorite: (id) => {
-    set((s) => {
-      const favs = s.favoriteIds.includes(id) ? s.favoriteIds.filter((f) => f !== id) : [...s.favoriteIds, id];
-      return { favoriteIds: favs };
-    });
-    AsyncStorage.setItem('productStore', JSON.stringify(get()));
-  },
-
-  addRecipe: (r) => {
-    const newR: Recipe = { ...r, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, steps: r.steps ?? [] };
-    set((s) => ({ recipes: [...s.recipes, newR] }));
-    AsyncStorage.setItem('productStore', JSON.stringify(get()));
-  },
-
-  removeRecipe: (id) => {
-    set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) }));
-    AsyncStorage.setItem('productStore', JSON.stringify(get()));
+      const [products, recipes] = await Promise.all([
+        api.getProducts().catch(() => DEFAULT_PRODUCTS),
+        api.getRecipes().catch(() => [] as any[]),
+      ]);
+      set({
+        products: products || DEFAULT_PRODUCTS,
+        favoriteIds: (products || []).filter((p: any) => p.isFavorite).map((p: any) => p.id),
+        recipes: (recipes || []).map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          ingredients: r.ingredients || [],
+          steps: r.steps || [],
+          isUserRecipe: r.isUserRecipe,
+          category: r.category,
+          macros: r.macros,
+        })),
+        hydrated: true,
+      });
+    } catch {
+      // Offline fallback — уже есть DEFAULT_PRODUCTS
+      set({ hydrated: true });
+    }
   },
 
   searchByBarcode: (barcode) => {
@@ -129,24 +89,92 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     return get().products.filter((p) => p.name.toLowerCase().includes(query));
   },
 
+  addProduct: async (p) => {
+    try {
+      const created = await api.addProduct(p);
+      set((s) => ({
+        products: [...s.products, { ...created, isFavorite: false }],
+      }));
+    } catch {
+      // fallback — сохраняем локально
+      const local = { ...p, id: `tmp-${Date.now()}`, isFavorite: false };
+      set((s) => ({ products: [...s.products, local] }));
+    }
+  },
+
+  removeProduct: (id) => {
+    api.deleteProduct(id).catch(() => {});
+    set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
+  },
+
+  toggleFavorite: async (id) => {
+    const wasFav = get().favoriteIds.includes(id);
+    // Оптимистичное обновление
+    set((s) => ({
+      favoriteIds: wasFav ? s.favoriteIds.filter((f) => f !== id) : [...s.favoriteIds, id],
+    }));
+    try {
+      await api.toggleFavorite(id);
+    } catch {
+      // Откат
+      set((s) => ({
+        favoriteIds: wasFav ? [...s.favoriteIds, id] : s.favoriteIds.filter((f) => f !== id),
+      }));
+    }
+  },
+
+  addRecipe: async (r) => {
+    try {
+      const created = await api.addRecipe(r);
+      const newRecipe: Recipe = {
+        id: created.id,
+        name: r.name,
+        ingredients: r.ingredients,
+        steps: r.steps || [],
+        isUserRecipe: true,
+        category: r.category,
+      };
+      set((s) => ({ recipes: [...s.recipes, newRecipe] }));
+    } catch {
+      const localId = `r-tmp-${Date.now()}`;
+      const newRecipe: Recipe = { ...r, id: localId, isUserRecipe: true };
+      set((s) => ({ recipes: [...s.recipes, newRecipe] }));
+    }
+  },
+
+  removeRecipe: (id) => {
+    api.deleteRecipe(id).catch(() => {});
+    set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) }));
+  },
+
   getRecipeMacros: (recipeId) => {
     const recipe = get().recipes.find((r) => r.id === recipeId);
     if (!recipe) return null;
-    const products = get().products;
-    let calories = 0, proteins = 0, fats = 0, carbs = 0;
-    const ingredients: { name: string; grams: number; kcal: number }[] = [];
-    for (const ing of recipe.ingredients) {
-      const p = products.find((pr) => pr.id === ing.productId);
-      if (p) {
-        const mult = ing.grams / 100;
-        const kcal = Math.round(p.caloriesPer100 * mult);
-        calories += kcal;
-        proteins += p.proteinsPer100 * mult;
-        fats += p.fatsPer100 * mult;
-        carbs += p.carbsPer100 * mult;
-        ingredients.push({ name: p.name, grams: ing.grams, kcal });
-      }
+
+    // Если с бэка пришли макросы — используем их
+    if (recipe.macros) {
+      return {
+        ...recipe.macros,
+        ingredients: recipe.ingredients.map((ing) => {
+          const product = get().products.find((p) => p.id === ing.productId);
+          const kcal = product ? Math.round(product.caloriesPer100 * ing.grams / 100) : 0;
+          return { name: ing.productName, grams: ing.grams, kcal };
+        }),
+      };
     }
+
+    // Иначе рассчитываем локально
+    let calories = 0, proteins = 0, fats = 0, carbs = 0;
+    const ingredients = recipe.ingredients.map((ing) => {
+      const product = get().products.find((p) => p.id === ing.productId);
+      if (!product) return { name: ing.productName, grams: ing.grams, kcal: 0 };
+      const mult = ing.grams / 100;
+      calories += product.caloriesPer100 * mult;
+      proteins += product.proteinsPer100 * mult;
+      fats += product.fatsPer100 * mult;
+      carbs += product.carbsPer100 * mult;
+      return { name: product.name, grams: ing.grams, kcal: Math.round(product.caloriesPer100 * mult) };
+    });
     return {
       calories: Math.round(calories),
       proteins: Math.round(proteins * 10) / 10,

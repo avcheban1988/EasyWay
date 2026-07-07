@@ -76,7 +76,7 @@ export default function ManualMacrosScreen() {
   const handleSave = () => {
     if (!hasValues) return;
     setManualMacros(proteins, fats, carbs);
-    router.replace('/onboarding/anthropometry');
+    router.replace('/onboarding/results');
   };
 
   return (
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   subtitle: {
     fontFamily: fontFamily('regular'),
