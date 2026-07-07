@@ -80,6 +80,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  phoneSignIn: async (phone: string) => {
+    try {
+      const res = await api.phoneAuth(phone);
+      api.setToken(res.token);
+      await AsyncStorage.setItem(TOKEN_KEY, res.token);
+      set({
+        account: { email: res.user.email, createdAt: new Date().toISOString() },
+        token: res.token,
+        status: 'authenticated',
+        hydrated: true,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   signOut: async () => {
     api.setToken(null);
     await AsyncStorage.removeItem(TOKEN_KEY);

@@ -1,4 +1,27 @@
-const API_BASE = 'http://172.20.10.3:3001/api';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+function getApiBase(): string {
+  // 1) Если указан production URL в app.json -> используем его
+  const configuredUrl = Constants.expoConfig?.extra?.apiUrl as string | undefined;
+  if (configuredUrl && typeof configuredUrl === 'string' && configuredUrl.trim()) {
+    return configuredUrl.replace(/\/+$/, '') + '/api';
+  }
+
+  // 2) Локальный режим — автоопределение хоста
+  if (Platform.OS === 'web') {
+    return 'http://localhost:3001/api';
+  }
+
+  const debuggerHost = Constants.manifest?.debuggerHost || Constants.expoConfig?.extra?.debuggerHost;
+  if (debuggerHost && typeof debuggerHost === 'string') {
+    return `http://${debuggerHost.split(':')[0]}:3001/api`;
+  }
+
+  return 'http://172.20.10.3:3001/api';
+}
+
+const API_BASE = getApiBase();
 
 class ApiClient {
   private token: string | null = null;
@@ -20,19 +43,39 @@ class ApiClient {
   private async request<T>(method: string, path: string, body?: any): Promise<T> {
     let res: Response;
     try {
-      res = await fetch(`${API_BASE}${path}`, {
+      const url = `${API_BASE}${path}`;
+      console.log(`[API] ${method} ${url}`);
+      res = await fetch(url, {
         method,
         headers: this.headers(),
         body: body ? JSON.stringify(body) : undefined,
       });
     } catch (e: any) {
-      throw new Error(`Network error: ${e?.message || 'fetch failed'}`);
+      const networkError = `Network error: ${e?.message || 'fetch failed'}`;
+      console.error(`[API] ${networkError}`);
+      throw new Error(networkError);
     }
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(err.error || `HTTP ${res.status}`);
+      let errorData: any;
+      try {
+        errorData = await res.json();
+      } catch {
+        errorData = { error: `HTTP ${res.status}` };
+      }
+      const errorMsg = errorData.error || errorData.message || `HTTP ${res.status}`;
+      console.error(`[API] Error ${res.status}:`, errorMsg);
+      throw new Error(errorMsg);
     }
-    return res.json();
+
+    try {
+      const data = await res.json();
+      console.log(`[API] Response OK:`, data);
+      return data;
+    } catch (e: any) {
+      console.error(`[API] Failed to parse response:`, e?.message);
+      throw new Error('Invalid response format');
+    }
   }
 
   // Auth
@@ -41,6 +84,9 @@ class ApiClient {
 
   register = (email: string, password: string, name?: string) =>
     this.request<{ token: string; user: any }>('POST', '/auth/register', { email, password, name });
+
+  phoneAuth = (phone: string) =>
+    this.request<{ token: string; user: any }>('POST', '/auth/phone', { phone });
 
   getProfile = () => this.request<any>('GET', '/auth/profile');
 

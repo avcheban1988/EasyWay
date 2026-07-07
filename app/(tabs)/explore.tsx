@@ -95,15 +95,29 @@ export default function ExploreScreen() {
           ) : (
             <>
               {displayedFavorites.map((p) => (
-                <TouchableOpacity key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
-                    <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => toggleFavorite(p.id)} activeOpacity={0.7}>
-                    <MaterialIcons name="star" size={22} color="#F8A44C" />
+                <View key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
+                    <View style={styles.productInfo}>
+                      <Text style={[styles.productName, { color: colors.text }]}>{p.name}</Text>
+                      <Text style={[styles.productMacros, { color: colors.icon }]}>{p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100}</Text>
+                    </View>
                   </TouchableOpacity>
-                </TouchableOpacity>
+                  <View style={styles.recipeActions}>
+                    <TouchableOpacity onPress={() => {
+                      setEditName(p.name);
+                      setEditProt(p.proteinsPer100.toString());
+                      setEditFat(p.fatsPer100.toString());
+                      setEditCarb(p.carbsPer100.toString());
+                      setEditPackage(p.packageGrams?.toString() ?? '');
+                      setEditProduct(p);
+                    }} style={styles.actionBtn} activeOpacity={0.7}>
+                      <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => toggleFavorite(p.id)} style={styles.actionBtn} activeOpacity={0.7}>
+                      <MaterialIcons name="star" size={20} color="#F8A44C" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ))}
               {favoriteProducts.length > 3 && (
                 <TouchableOpacity style={styles.expandRow} onPress={() => setFavoritesExpanded((v) => !v)} activeOpacity={0.85}>

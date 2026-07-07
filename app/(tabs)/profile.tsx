@@ -220,7 +220,15 @@ export default function ProfileScreen() {
 
           {/* Имя */}
           <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Имя</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Имя</Text>
+              {userProfile.isPremium && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFD700', borderRadius: 8 }}>
+                  <MaterialIcons name="star" size={14} color="#B8860B" />
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#B8860B' }}>PREMIUM</Text>
+                </View>
+              )}
+            </View>
             <TextInput
               style={[styles.nameInput, { color: colors.text, borderColor: '#53B175', backgroundColor: hexToRgba('#53B175', 0.06) }]}
               placeholder="Ваше имя"

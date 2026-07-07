@@ -31,6 +31,7 @@ async function initDatabase() {
       goal ENUM('lose','maintain','gain','manual') DEFAULT NULL,
       gender ENUM('male','female') DEFAULT NULL,
       age INT DEFAULT NULL,
+      birth_date DATE DEFAULT NULL,
       height INT DEFAULT NULL,
       weight DECIMAL(5,1) DEFAULT NULL,
       activity_level ENUM('minimal','light','moderate','high','extreme') DEFAULT NULL,

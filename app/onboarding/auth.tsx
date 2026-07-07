@@ -16,7 +16,7 @@ export default function AuthScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const { account, hydrated: authHydrated, checkAuth, signIn, signUp } = useAuthStore();
+  const { account, hydrated: authHydrated, checkAuth, signIn, signUp, phoneSignIn } = useAuthStore();
   const { userProfile, resetProfile, loadProfile } = useUserStore();
   const { loadFoodEntries } = useFoodStore();
 
@@ -201,8 +201,13 @@ export default function AuthScreen() {
             setLoading(false);
             return;
           }
-          // тут логика: проверить, есть ли пользователь — если нет, создать и начать онбординг
-          // в текущем прототипе просто начинаем онбординг
+          // Создаём/логиним пользователя по номеру телефона
+          const ok = await phoneSignIn(normalizedPhone!);
+          if (!ok) {
+            setError('Ошибка при регистрации. Попробуйте снова.');
+            setLoading(false);
+            return;
+          }
           resetProfile();
           router.replace('/onboarding/goal');
           return;
@@ -250,7 +255,7 @@ export default function AuthScreen() {
               <Animated.View style={{ paddingHorizontal: 20, transform: [{ translateY: phoneAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -(MOVE_UP - INPUT_OFFSET)] }) }] }}>
                 <Animated.View style={{ position: 'absolute', top: TARGET_TOP - 120, left: 25, opacity: phoneAnim, zIndex: 60 }}>
                   <PressableScale onPress={handleBackFromPhone} style={{ padding: 6 }}>
-                    <Image source={require('../../assets/images/RegAuth/backArrow.svg')} style={styles.backButtonIcon} />
+                    <MaterialIcons name="arrow-back" size={24} color="#53B175" />
                   </PressableScale>
                 </Animated.View>
 

@@ -1,0 +1,7 @@
+SetEnv GHOST_NODE_VERSION_CHECK false
+PassengerStartupFile src/index.js
+PassengerResolveSymlinksInDocumentRoot on
+Require all granted
+PassengerAppType node
+PassengerAppRoot /home/a1162533/domains/getthisjob.ru/public_html
+Options -MultiViews

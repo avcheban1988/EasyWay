@@ -4,6 +4,7 @@ import InputField from '@/components/ui/input-field';
 import { Colors, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GenderType, useUserStore } from '@/store/userStore';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -53,20 +54,42 @@ export default function AnthropometryScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const { userProfile, setGender, setAge, setHeight, setWeight } = useUserStore();
+  const { userProfile, setGender, setBirthDate, setHeight, setWeight } = useUserStore();
 
   const [localGender, setLocalGender] = useState<GenderType | null>(userProfile.gender);
-  const [localAge, setLocalAge] = useState(userProfile.age || 25);
+  
+  // Инициализируем дату рождения. Если есть birthDate в профиле, используем её, иначе создаём дату на основе возраста
+  const initialBirthDate = userProfile.birthDate 
+    ? new Date(userProfile.birthDate)
+    : new Date(new Date().getFullYear() - (userProfile.age || 25), 0, 1);
+  
+  const [localBirthDate, setLocalBirthDate] = useState(initialBirthDate);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [localHeight, setLocalHeight] = useState(userProfile.height || 170);
   const [localWeight, setLocalWeight] = useState(userProfile.weight || 70);
 
-  const validateAge = (value: number) => value >= 16 && value <= 90;
+  // Вычисляем возраст из birthDate
+  const calculateAge = (birthDate: Date): number => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const currentAge = calculateAge(localBirthDate);
+
+  const validateAge = (age: number) => age >= 16 && age <= 90;
   const validateHeight = (value: number) => value >= 140 && value <= 220;
   const validateWeight = (value: number) => value >= 40 && value <= 200;
 
-  const handleAgeChange = (text: string) => {
-    const num = Number(text);
-    setLocalAge(isNaN(num) ? 25 : num);
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      setLocalBirthDate(selectedDate);
+    }
+    setShowDatePicker(false);
   };
 
   const handleHeightChange = (text: string) => {
@@ -79,16 +102,24 @@ export default function AnthropometryScreen() {
     setLocalWeight(isNaN(num) ? 70 : num);
   };
 
+  const formatBirthDate = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
   const handleNext = () => {
     setGender(localGender!);
-    setAge(localAge);
+    const birthDateString = localBirthDate.toISOString().split('T')[0];
+    setBirthDate(birthDateString);
     setHeight(localHeight);
     setWeight(localWeight);
     router.replace('/onboarding/activity');
   };
 
-  const isFormValid = localGender !== null && localAge && localHeight && localWeight &&
-    validateAge(localAge) && validateHeight(localHeight) && validateWeight(localWeight);
+  const isFormValid = localGender !== null && localHeight && localWeight &&
+    validateAge(currentAge) && validateHeight(localHeight) && validateWeight(localWeight);
 
   return (
     <View style={[styles.container, { backgroundColor: '#fff' }]}>
@@ -134,14 +165,31 @@ export default function AnthropometryScreen() {
             </View>
 
             <View style={[styles.colorField, { borderLeftColor: '#F8A44C', backgroundColor: hexToRgba('#F8A44C', 0.1) }]}>
-              <Text style={[styles.sectionTitle, { color: '#F8A44C' }]}>Возраст</Text>
-              <InputField
-                value={localAge.toString()}
-                onChangeText={handleAgeChange}
-                keyboardType="numeric"
-                placeholder="16-90 лет"
-              />
+              <Text style={[styles.sectionTitle, { color: '#F8A44C' }]}>Дата рождения</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <View style={styles.datePickerButton}>
+                  <Text style={styles.datePickerText}>
+                    {formatBirthDate(localBirthDate)} ({currentAge} лет)
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              {!validateAge(currentAge) && (
+                <Text style={{ color: '#E63946', fontSize: 12, marginTop: 8 }}>
+                  Возраст должен быть от 16 до 90 лет
+                </Text>
+              )}
             </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={localBirthDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())}
+                minimumDate={new Date(1934, 0, 1)}
+              />
+            )}
 
             <View style={[styles.colorField, { borderLeftColor: '#F7A593', backgroundColor: hexToRgba('#F7A593', 0.1) }]}>
               <Text style={[styles.sectionTitle, { color: '#F7A593' }]}>Рост (см)</Text>
@@ -278,6 +326,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     marginBottom: 12,
+  },
+  datePickerButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(248, 164, 76, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 164, 76, 0.3)',
+  },
+  datePickerText: {
+    fontFamily: fontFamily('regular'),
+    fontSize: 16,
+    color: '#333',
   },
   ctaWrap: {
     position: 'relative',

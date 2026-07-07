@@ -101,10 +101,16 @@ export default function AddFoodScreen() {
         handleSelectProduct(found);
       }, 800);
     } else {
-      // Если сканер открыт из формы ручного добавления — подставляем штрихкод
       if (showManual) {
         setManualBarcode(code);
       }
+      setShowManual(true);
+      setMode('manual');
+      setSearchQuery('');
+      setResults([]);
+      setTimeout(() => {
+        setManualBarcode(code);
+      }, 0);
     }
   };
 
@@ -275,13 +281,13 @@ export default function AddFoodScreen() {
       </View>
 
       {/* Результаты поиска */}
-      {(results.length > 0 || (searchQuery.trim() && !searching)) && !selectedProduct && (
+{(results.length > 0 || ((searchQuery.trim() || showManual) && !searching)) && !selectedProduct && (
         <View style={styles.resultsList}>
           {results.map((p) => (
             <TouchableOpacity key={p.id} style={[styles.resultItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => handleSelectProduct(p)} activeOpacity={0.85}>
               <View style={styles.resultInfo}>
                 <Text style={[styles.resultName, { color: colors.text }]}>{p.name}</Text>
-                <Text style={[styles.resultMacros, { color: colors.icon }]}>
+                <Text style={[styles.resultMacros, { color: colors.icon }]}> 
                   {p.caloriesPer100} ккал · Б {p.proteinsPer100} / Ж {p.fatsPer100} / У {p.carbsPer100} на 100г
                   {p.packageGrams ? ` · уп. ${p.packageGrams}г` : ''}
                 </Text>
@@ -294,17 +300,20 @@ export default function AddFoodScreen() {
               </View>
             </TouchableOpacity>
           ))}
-          {searchQuery.trim() && results.length === 0 && !searching && (
-            <View style={[styles.noResults, { borderColor: colors.border }]}>
+          {showManual && !searching && (
+            <View style={[styles.noResults, { borderColor: colors.border }]}> 
+              {renderManualForm()}
+            </View>
+          )}
+          {searchQuery.trim() && results.length === 0 && !showManual && !searching && (
+            <View style={[styles.noResults, { borderColor: colors.border }]}> 
               <Text style={[styles.noResultsText, { color: colors.icon }]}>Ничего не найдено</Text>
-              <TouchableOpacity style={styles.expandRow} onPress={() => setShowManual((v) => !v)} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.expandRow} onPress={() => setShowManual(true)} activeOpacity={0.85}>
                 <Text style={[styles.addNewText, { color: colors.primary }]}>Добавить новый продукт</Text>
                 <Animated.View style={{ transform: [{ rotate: showManual ? '180deg' : '0deg' }] }}>
                   <MaterialIcons name="expand-more" size={22} color={colors.primary} />
                 </Animated.View>
               </TouchableOpacity>
-
-              {showManual && renderManualForm()}
             </View>
           )}
         </View>
@@ -399,7 +408,14 @@ export default function AddFoodScreen() {
                             <Text style={[styles.barcodeNotFound, { color: colors.icon }]}>Продукт не найден</Text>
                             <TouchableOpacity
                               style={[styles.barcodeAddNew, { backgroundColor: '#53B175' }]}
-                              onPress={() => { setBarcodeModal(false); setSearchQuery(' '); setShowManual(true); }}
+                              onPress={() => {
+                                setBarcodeModal(false);
+                                setMode('manual');
+                                setShowManual(true);
+                                setSearchQuery('');
+                                setResults([]);
+                                setManualBarcode(barcodeValue);
+                              }}
                               activeOpacity={0.85}
                             >
                               <Text style={styles.barcodeAddNewText}>Добавить новый продукт</Text>

@@ -20,7 +20,19 @@ export default function Index() {
     if (!rootNavigationState?.key) return;
 
     const initializeApp = async () => {
+      const { account, token } = useAuthStore.getState();
+      if (!account && !token) {
+        router.replace('/onboarding/auth');
+        return;
+      }
+
       await checkAuth();
+      const freshToken = useAuthStore.getState().token;
+      if (!freshToken) {
+        router.replace('/onboarding/auth');
+        return;
+      }
+
       await loadProfile();
 
       const profile = useUserStore.getState().userProfile;
@@ -29,13 +41,8 @@ export default function Index() {
         return;
       }
 
-      const { account } = useAuthStore.getState();
-      if (account) {
-        const next = getNextOnboardingRoute(profile);
-        router.replace(next);
-      } else {
-        router.replace('/onboarding/auth');
-      }
+      const next = getNextOnboardingRoute(profile);
+      router.replace(next);
     };
 
     initializeApp();

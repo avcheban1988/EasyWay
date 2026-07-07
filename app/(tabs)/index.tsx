@@ -63,11 +63,13 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!rootNavigationState?.key) return;
     const initialize = async () => {
+      const token = useAuthStore.getState().token;
+      if (!token) return;
       await loadProfile();
       await loadFoodEntries();
     };
     initialize();
-  }, [checkAuth, loadFoodEntries, loadProfile, rootNavigationState?.key, router]);
+  }, [loadFoodEntries, loadProfile, rootNavigationState?.key, router]);
 
   useEffect(() => {
     if (!toastMsg) return;
