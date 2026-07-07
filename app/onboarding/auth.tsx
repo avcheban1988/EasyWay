@@ -57,9 +57,7 @@ export default function AuthScreen() {
     if (!authHydrated) checkAuth();
   }, [authHydrated, checkAuth]);
 
-  useEffect(() => {
-    if (authHydrated) setMode(account ? 'signin' : 'signup');
-  }, [account, authHydrated]);
+  // Всегда используем режим телефона, независимо от аккаунта
 
   const ctaText = mode === 'signup' ? 'Зарегистрироваться' : 'Войти';
   const titleText = 'EasyWay';
