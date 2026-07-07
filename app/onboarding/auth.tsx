@@ -202,7 +202,8 @@ export default function AuthScreen() {
             return;
           }
           // Создаём/логиним пользователя по номеру телефона
-          const ok = await phoneSignIn(normalizedPhone!);
+          const cleanPhone = normalizedPhone!.replace(/\s/g, '');
+          const ok = await phoneSignIn(cleanPhone);
           if (!ok) {
             setError('Ошибка при регистрации. Попробуйте снова.');
             setLoading(false);

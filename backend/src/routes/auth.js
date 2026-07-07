@@ -67,13 +67,14 @@ router.post('/login', async (req, res) => {
 // Вход/регистрация по номеру телефона
 router.post('/phone', async (req, res) => {
   try {
-    const { phone } = req.body;
+    let { phone } = req.body;
     if (!phone) {
       return res.status(400).json({ error: 'Номер телефона обязателен' });
     }
     
-    // Используем номер телефона как email (уникальный идентификатор)
-    const email = `phone_${phone.replace(/\D/g, '')}@easyway.app`;
+    // Очищаем номер от любых нецифровых символов
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    const email = `phone_${cleanPhone}@easyway.app`;
     
     // Проверяем, есть ли уже пользователь
     const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -86,7 +87,7 @@ router.post('/phone', async (req, res) => {
     }
     
     // Нет — создаём нового пользователя
-    const hash = await bcrypt.hash(phone, 10);
+    const hash = await bcrypt.hash(cleanPhone, 10);
     const [result] = await pool.query(
       'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
       [email, hash, '']
