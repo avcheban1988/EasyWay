@@ -6,7 +6,7 @@ async function seed() {
 
   // === Создаём тестового пользователя (премиум) ===
   const hash = await bcrypt.hash('test123', 10);
-  const [userResult] = await pool.query(
+  const userResult = await pool.query(
     `INSERT IGNORE INTO users (email, password_hash, name, is_premium, is_onboarded)
      VALUES (?, ?, ?, TRUE, TRUE)`,
     ['test@easyway.app', hash, 'Тестовый']
@@ -142,10 +142,10 @@ async function seed() {
   ];
 
   for (const r of recipes) {
-    const [existing] = await pool.query(`SELECT id FROM recipes WHERE name = ?`, [r.name]);
+    const existing = await pool.query(`SELECT id FROM recipes WHERE name = ?`, [r.name]);
     if (existing.length > 0) continue;
 
-    const [recipeRes] = await pool.query(
+    const recipeRes = await pool.query(
       `INSERT INTO recipes (name, category, is_user_recipe) VALUES (?, ?, FALSE)`,
       [r.name, r.category]
     );
@@ -153,7 +153,7 @@ async function seed() {
 
     for (let i = 0; i < r.ingredients.length; i++) {
       const ing = r.ingredients[i];
-      const [prod] = await pool.query(`SELECT id FROM products WHERE name = ?`, [ing.name]);
+      const prod = await pool.query(`SELECT id FROM products WHERE name = ?`, [ing.name]);
       if (prod.length > 0) {
         await pool.query(
           `INSERT INTO recipe_ingredients (recipe_id, product_id, grams) VALUES (?, ?, ?)`,

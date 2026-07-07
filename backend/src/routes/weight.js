@@ -7,7 +7,7 @@ const router = express.Router();
 // Получить записи веса
 router.get('/', auth, async (req, res) => {
   try {
-    const [rows] = await pool.query(
+    const rows = await pool.query(
       `SELECT * FROM weight_entries WHERE user_id = ? ORDER BY date DESC`,
       [req.userId]
     );
@@ -29,7 +29,7 @@ router.post('/', auth, async (req, res) => {
        ON DUPLICATE KEY UPDATE weight = VALUES(weight)`,
       [req.userId, d, weight]
     );
-    const [rows] = await pool.query(
+    const rows = await pool.query(
       `SELECT * FROM weight_entries WHERE user_id = ? AND date = ?`,
       [req.userId, d]
     );

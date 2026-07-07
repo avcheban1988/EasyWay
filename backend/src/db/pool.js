@@ -1,4 +1,5 @@
-const mysql = require('mysql2/promise');
+const mysql = require('mysql');
+const { promisify } = require('util');
 require('dotenv').config();
 
 const pool = mysql.createPool({
@@ -7,9 +8,12 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
+  charset: 'utf8',
   connectionLimit: 10,
-  queueLimit: 0,
 });
+
+// Обёртка для промисов
+pool.query = promisify(pool.query);
+pool.getConnection = promisify(pool.getConnection);
 
 module.exports = pool;

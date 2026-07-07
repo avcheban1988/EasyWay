@@ -7,19 +7,19 @@ const router = express.Router();
 // Получить все рецепты
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const [recipes] = await pool.query(
+    const recipes = await pool.query(
       `SELECT r.*, u.id as creator_id FROM recipes r
        LEFT JOIN users u ON u.id = r.created_by
        ORDER BY r.is_user_recipe, r.name`
     );
     const result = [];
     for (const r of recipes) {
-      const [ingredients] = await pool.query(
+      const ingredients = await pool.query(
         `SELECT ri.*, p.name as product_name FROM recipe_ingredients ri
          JOIN products p ON p.id = ri.product_id WHERE ri.recipe_id = ?`,
         [r.id]
       );
-      const [steps] = await pool.query(
+      const steps = await pool.query(
         `SELECT description FROM recipe_steps WHERE recipe_id = ? ORDER BY step_number`,
         [r.id]
       );
@@ -64,7 +64,7 @@ router.get('/', optionalAuth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { name, ingredients, steps, category } = req.body;
-    const [recipeRes] = await pool.query(
+    const recipeRes = await pool.query(
       `INSERT INTO recipes (name, category, is_user_recipe, created_by) VALUES (?, ?, TRUE, ?)`,
       [name, category || null, req.userId]
     );

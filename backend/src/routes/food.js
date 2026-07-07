@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().slice(0, 10);
-    const [rows] = await pool.query(
+    const rows = await pool.query(
       `SELECT * FROM food_entries WHERE user_id = ? AND date = ? ORDER BY FIELD(meal_type,'Завтрак','Обед','Ужин','Перекус'), created_at`,
       [req.userId, date]
     );
@@ -33,7 +33,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { mealType, name, calories, proteins, fats, carbs, grams, date, productId } = req.body;
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO food_entries (user_id, date, meal_type, name, calories, proteins, fats, carbs, grams, product_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [req.userId, date || new Date().toISOString().slice(0, 10), mealType, name,

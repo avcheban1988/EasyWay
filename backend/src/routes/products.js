@@ -7,7 +7,7 @@ const router = express.Router();
 // Получить все продукты (с флагом избранного для пользователя)
 router.get('/', auth, async (req, res) => {
   try {
-    const [products] = await pool.query(
+    const products = await pool.query(
       `SELECT p.*, IF(f.id IS NOT NULL, TRUE, FALSE) as is_favorite
        FROM products p
        LEFT JOIN favorite_products f ON f.product_id = p.id AND f.user_id = ?
@@ -36,7 +36,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/search', auth, async (req, res) => {
   try {
     const q = req.query.q || '';
-    const [products] = await pool.query(
+    const products = await pool.query(
       `SELECT p.*, IF(f.id IS NOT NULL, TRUE, FALSE) as is_favorite
        FROM products p
        LEFT JOIN favorite_products f ON f.product_id = p.id AND f.user_id = ?
@@ -65,7 +65,7 @@ router.get('/search', auth, async (req, res) => {
 // Поиск по штрихкоду
 router.get('/barcode/:code', auth, async (req, res) => {
   try {
-    const [products] = await pool.query(
+    const products = await pool.query(
       `SELECT p.*, IF(f.id IS NOT NULL, TRUE, FALSE) as is_favorite
        FROM products p
        LEFT JOIN favorite_products f ON f.product_id = p.id AND f.user_id = ?
@@ -90,7 +90,7 @@ router.get('/barcode/:code', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { name, caloriesPer100, proteinsPer100, fatsPer100, carbsPer100, packageGrams, barcode } = req.body;
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO products (name, calories_per_100, proteins_per_100, fats_per_100, carbs_per_100, package_grams, barcode, is_default, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, ?)`,
       [name, caloriesPer100, proteinsPer100 || 0, fatsPer100 || 0, carbsPer100 || 0, packageGrams || null, barcode || null, req.userId]
@@ -120,7 +120,7 @@ router.delete('/:id', auth, async (req, res) => {
 // Переключить избранное
 router.post('/:id/favorite', auth, async (req, res) => {
   try {
-    const [existing] = await pool.query(
+    const existing = await pool.query(
       'SELECT id FROM favorite_products WHERE user_id = ? AND product_id = ?',
       [req.userId, req.params.id]
     );

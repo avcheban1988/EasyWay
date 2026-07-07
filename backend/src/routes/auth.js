@@ -27,11 +27,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email и пароль обязательны' });
     }
     const existing = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-    if (existing[0].length > 0) {
+    if (existing.length > 0) {
       return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
     }
     const hash = await bcrypt.hash(password, 10);
-    const [result] = await pool.query(
+    const result = await pool.query(
       'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
       [email, hash, name || '']
     );
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const rows = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
@@ -77,7 +77,7 @@ router.post('/phone', async (req, res) => {
     const email = `phone_${cleanPhone}@easyway.app`;
     
     // Проверяем, есть ли уже пользователь
-    const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const existing = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     
     if (existing.length > 0) {
       // Уже есть — логинимся
@@ -88,7 +88,7 @@ router.post('/phone', async (req, res) => {
     
     // Нет — создаём нового пользователя
     const hash = await bcrypt.hash(cleanPhone, 10);
-    const [result] = await pool.query(
+    const result = await pool.query(
       'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
       [email, hash, '']
     );
@@ -103,7 +103,7 @@ router.post('/phone', async (req, res) => {
 // Получить профиль
 router.get('/profile', auth, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId]);
+    const rows = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId]);
     if (rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
     const u = rows[0];
     const age = calculateAge(u.birth_date) || u.age;
@@ -157,7 +157,7 @@ router.put('/profile', auth, async (req, res) => {
     values.push(req.userId);
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
     
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId]);
+    const rows = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId]);
     const u = rows[0];
     const age = calculateAge(u.birth_date) || u.age;
     
