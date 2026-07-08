@@ -1,9 +1,15 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
-const envPath = path.resolve(__dirname, '../../.env.production');
+// 🔐 Загрузка .env — сначала .env (локально), потом .env.production (сервер)
+const envDev = path.resolve(__dirname, '../../.env');
+const envProd = path.resolve(__dirname, '../../.env.production');
+const envPath = fs.existsSync(envDev) ? envDev : envProd;
 dotenv.config({ path: envPath });
+
+console.log('📦 ЗАГРУЖЕН .ENV:', envPath);
 
 async function initDatabase() {
   // Сначала создаём БД, если не существует

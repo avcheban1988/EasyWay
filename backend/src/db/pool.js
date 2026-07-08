@@ -1,13 +1,16 @@
 const mysql = require('mysql2');
 const path = require('path');
+const fs = require('fs');
 const { promisify } = require('util');
 const dotenv = require('dotenv');
 
-// 🔐 Загрузка .env.production
-const envPath = path.resolve(__dirname, '../../.env.production');
+// 🔐 Загрузка .env — сначала .env (локально), потом .env.production (сервер)
+const envDev = path.resolve(__dirname, '../../.env');
+const envProd = path.resolve(__dirname, '../../.env.production');
+const envPath = fs.existsSync(envDev) ? envDev : envProd;
 dotenv.config({ path: envPath });
 
-console.log('📦 ПУТЬ К .ENV.PRODUCTION:', envPath);
+console.log('📦 ЗАГРУЖЕН .ENV:', envPath);
 console.log('🔌 ПАРАМЕТРЫ БД:', {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -22,7 +25,6 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   connectTimeout: 10000,
-  acquireTimeout: 10000,
 };
 
 const pool = mysql.createPool(dbConfig);
