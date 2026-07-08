@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Dimensions,
-  ImageBackground,
-  ImageSourcePropType,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
+    Dimensions,
+    ImageBackground,
+    ImageSourcePropType,
+    StyleSheet,
+    View,
+    type StyleProp,
+    type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

@@ -1,13 +1,17 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+const envPath = path.resolve(__dirname, '../../.env.production');
+dotenv.config({ path: envPath });
 
 async function initDatabase() {
   // Сначала создаём БД, если не существует
   const conn = await mysql.createConnection({
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || '127.0.0.1',
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
+    port: process.env.DB_PORT || 3306,
   });
 
   await conn.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
@@ -15,11 +19,11 @@ async function initDatabase() {
 
   // Теперь создаём таблицы
   const db = await mysql.createConnection({
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || '127.0.0.1',
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
+    port: process.env.DB_PORT || 3306,
   });
 
   const queries = [

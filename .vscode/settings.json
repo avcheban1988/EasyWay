@@ -7,6 +7,28 @@
   "Codegeex.RepoIndex": true,
   "chat.tools.terminal.autoApprove": {
     "npx expo": true,
-    "npx tsc": true
+    "npx tsc": true,
+    "/^cd /home/aleks/Документы/webDev/Счетчик\\\\ Ккалорий/EasyWay/MyNewApp/backend && node -e \"const http=require\\('http'\\);http\\.get\\('http://127\\.0\\.0\\.1:3001/api/health',res=>\\{let d='';res\\.on\\('data',c=>d\\+=c\\);res\\.on\\('end',\\(\\)=>\\{console\\.log\\('status',res\\.statusCode\\);console\\.log\\(d\\);\\}\\);\\}\\)\\.on\\('error',err=>\\{console\\.error\\(err\\.message\\);process\\.exit\\(1\\);\\}\\);\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "ssh": true,
+    "scp": true,
+    "/^TOKEN=\\$\\(ssh a1162533@141\\.8\\.192\\.217 \"curl -s -X POST https://getthisjob\\.ru/api/auth/phone -H 'Content-Type: application/json' -d '\\{\\\\\"phone\\\\\":\\\\\"9037277287\\\\\"\\}'\" \\| node -e \"process\\.stdin\\.on\\('data',d=>\\{try\\{console\\.log\\(JSON\\.parse\\(d\\)\\.token\\)\\}catch\\{\\}\\}\\)\"\\) && echo \"Token obtained\" && ssh a1162533@141\\.8\\.192\\.217 \"curl -s https://getthisjob\\.ru/api/products -H 'Authorization: Bearer \\$TOKEN' \\| head -c 200\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^cd '/home/aleks/Документы/webDev/Счетчик Ккалорий/EasyWay/MyNewApp/backend' && node -c src/index\\.js && node -c src/db/pool\\.js && node -c src/db/init\\.js$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^cd '/home/aleks/Документы/webDev/Счетчик Ккалорий/EasyWay/MyNewApp/backend' && node -e \"try \\{ require\\('mysql'\\); console\\.log\\('mysql OK'\\); \\} catch\\(e\\) \\{ console\\.log\\('mysql ERROR:', e\\.message\\); \\}\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^cd '/home/aleks/Документы/webDev/Счетчик Ккалорий/EasyWay/MyNewApp/backend' && node -c src/index\\.js && node -c src/db/pool\\.js && node -c src/db/init\\.js && echo \"✅ OK\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }
