@@ -4,7 +4,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const dotenv = require('dotenv');
 
-// 🔐 Загрузка .env — сначала .env (локально), потом .env.production (сервер)
+// � Загрузка .env — сначала .env (локально), потом .env.production (сервер)
 const envDev = path.resolve(__dirname, '../../.env');
 const envProd = path.resolve(__dirname, '../../.env.production');
 const envPath = fs.existsSync(envDev) ? envDev : envProd;
