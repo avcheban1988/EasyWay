@@ -65,6 +65,8 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
     set((s) => ({ foodEntries: s.foodEntries.filter((e) => e.id !== id) }));
   },
 
+  resetFoodEntries: () => set({ foodEntries: [], hydrated: false }),
+
   getEntriesForDate: (date) => {
     return get().foodEntries.filter((entry) => entry.date === date);
   },

@@ -192,9 +192,50 @@ export const useUserStore = create<UserStore>((set, get) => ({
   loadProfile: async () => {
     try {
       const u = await api.getProfile();
+      const profile = mapApiToProfile(u);
+      let macros = mapApiToMacros(u);
+
+      // Если сервер не вернул макросы — пробуем восстановить
+      if (!macros) {
+        if (profile.goal === 'manual' && profile.manualProteins && profile.manualFats && profile.manualCarbs) {
+          // Для ручного режима считаем из manualProteins/fats/carbs
+          const p = profile.manualProteins;
+          const f = profile.manualFats;
+          const c = profile.manualCarbs;
+          macros = { calories: Math.round(p * 4 + f * 9 + c * 4), proteins: Math.round(p), fats: Math.round(f), carbs: Math.round(c) };
+          // Сохраняем на сервер
+          try {
+            await api.updateProfile({
+              daily_calories: macros.calories,
+              daily_proteins: macros.proteins,
+              daily_fats: macros.fats,
+              daily_carbs: macros.carbs,
+            });
+          } catch { /* не критично */ }
+        } else if (profile.gender && profile.age && profile.height && profile.weight && profile.activityLevel) {
+          // Для обычного режима считаем локально
+          set({ userProfile: profile, profileHydrated: true });
+          const { calculateMacros } = get();
+          calculateMacros();
+          // Сохраняем на сервер
+          const { dailyMacros: newMacros } = get();
+          if (newMacros) {
+            try {
+              await api.updateProfile({
+                daily_calories: newMacros.calories,
+                daily_proteins: newMacros.proteins,
+                daily_fats: newMacros.fats,
+                daily_carbs: newMacros.carbs,
+              });
+            } catch { /* не критично */ }
+          }
+          return;
+        }
+      }
+
       set({
-        userProfile: mapApiToProfile(u),
-        dailyMacros: mapApiToMacros(u),
+        userProfile: profile,
+        dailyMacros: macros,
         profileHydrated: true,
       });
     } catch {

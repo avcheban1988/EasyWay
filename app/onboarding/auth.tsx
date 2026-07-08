@@ -207,8 +207,15 @@ export default function AuthScreen() {
             setLoading(false);
             return;
           }
-          resetProfile();
-          router.replace('/onboarding/goal');
+          // Загружаем профиль — если онбординг уже пройден, идём на главную
+          await loadProfile(cleanPhone);
+          const existingProfile = useUserStore.getState().userProfile;
+          if (existingProfile.isOnboarded) {
+            router.replace('/(tabs)');
+          } else {
+            resetProfile();
+            router.replace('/onboarding/goal');
+          }
           return;
         }
       }

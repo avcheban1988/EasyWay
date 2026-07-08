@@ -7,7 +7,7 @@ import { GenderType, useUserStore } from '@/store/userStore';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -132,9 +132,9 @@ export default function AnthropometryScreen() {
             resizeMode="cover"
           />
           <View style={styles.imageOverlay} />
-          {/* Кнопка назад поверх изображения */}
+          {/* Кнопка назад — возврат к выбору цели */}
           <View style={styles.topBar}>
-            <PressableScale onPress={() => router.back()}>
+            <PressableScale onPress={() => router.replace('/onboarding/goal')}>
               <View style={[styles.backBtn, { backgroundColor: 'rgba(255,255,255,0.9)' }]}>
                 <Text style={[styles.backArrow, { color: '#000' }]}>←</Text>
               </View>
@@ -180,15 +180,38 @@ export default function AnthropometryScreen() {
               )}
             </View>
 
-            {showDatePicker && (
-              <DateTimePicker
-                value={localBirthDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                maximumDate={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())}
-                minimumDate={new Date(1934, 0, 1)}
-              />
+            {Platform.OS === 'web' ? (
+              showDatePicker && (
+                <View style={styles.webDateWrap}>
+                  <TextInput
+                    style={styles.webDateInput}
+                    type="date"
+                    defaultValue={localBirthDate.toISOString().split('T')[0]}
+                    onChange={(e: any) => {
+                      const val = e.target?.value;
+                      if (val) {
+                        const d = new Date(val + 'T00:00:00');
+                        if (!isNaN(d.getTime())) {
+                          setLocalBirthDate(d);
+                        }
+                      }
+                      setShowDatePicker(false);
+                    }}
+                    autoFocus
+                  />
+                </View>
+              )
+            ) : (
+              showDatePicker && (
+                <DateTimePicker
+                  value={localBirthDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  maximumDate={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())}
+                  minimumDate={new Date(1934, 0, 1)}
+                />
+              )
             )}
 
             <View style={[styles.colorField, { borderLeftColor: '#F7A593', backgroundColor: hexToRgba('#F7A593', 0.1) }]}>
@@ -339,6 +362,18 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily('regular'),
     fontSize: 16,
     color: '#333',
+  },
+  webDateWrap: {
+    marginBottom: 20,
+    paddingHorizontal: 14,
+  },
+  webDateInput: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F8A44C',
+    fontSize: 16,
   },
   ctaWrap: {
     position: 'relative',

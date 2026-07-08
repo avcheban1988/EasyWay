@@ -527,24 +527,29 @@ export default function ProfileScreen() {
         </View>
 
         {/* Кнопка выхода — внутри ScrollView, после блока веса */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => {
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={() => {
+          const doLogout = async () => {
+            await useAuthStore.getState().signOut();
+            useUserStore.getState().resetProfile();
+            useFoodStore.getState().resetFoodEntries();
+            router.replace('/onboarding/auth');
+          };
+          if (Platform.OS === 'web') {
+            if (window.confirm('Точно выйти?')) doLogout();
+          } else {
             Alert.alert('Выход', 'Точно выйти?', [
               { text: 'Отмена', style: 'cancel' },
-              { text: 'Выйти', style: 'destructive', onPress: async () => {
-                await useAuthStore.getState().signOut();
-                useUserStore.getState().resetProfile();
-                useFoodStore.getState().resetFoodEntries();
-                router.replace('/');
-              }},
+              { text: 'Выйти', style: 'destructive', onPress: doLogout },
             ]);
-          }}
-          activeOpacity={0.85}
-        >
-          <MaterialIcons name="logout" size={18} color="#E53935" />
-          <Text style={styles.logoutText}>Выйти</Text>
-        </TouchableOpacity>
+          }
+        }}
+        activeOpacity={0.85}
+      >
+        <MaterialIcons name="logout" size={18} color="#E53935" />
+        <Text style={styles.logoutText}>Выйти</Text>
+      </TouchableOpacity>
       </ScrollView>
 
       {/* Модальное окно с результатами пересчёта */}
