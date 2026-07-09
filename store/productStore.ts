@@ -12,6 +12,7 @@ export interface Product {
   packageGrams?: number;
   barcode?: string;
   isFavorite?: boolean;
+  isDefault?: boolean;
 }
 
 export interface RecipeIngredient {
@@ -56,11 +57,11 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     if (get().hydrated) return;
     try {
       const [products, recipes] = await Promise.all([
-        api.getProducts().catch(() => DEFAULT_PRODUCTS),
+        api.getProducts().catch(() => DEFAULT_PRODUCTS.map(p => ({ ...p, isDefault: true }))),
         api.getRecipes().catch(() => [] as any[]),
       ]);
       set({
-        products: products || DEFAULT_PRODUCTS,
+        products: products || DEFAULT_PRODUCTS.map(p => ({ ...p, isDefault: true })),
         favoriteIds: (products || []).filter((p: any) => p.isFavorite).map((p: any) => p.id),
         recipes: (recipes || []).map((r: any) => ({
           id: r.id,

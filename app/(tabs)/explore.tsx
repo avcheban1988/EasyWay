@@ -34,17 +34,17 @@ export default function ExploreScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [favoritesExpanded, setFavoritesExpanded] = useState(false);
   const [userRecipesExpanded, setUserRecipesExpanded] = useState(false);
+  const [customProductsExpanded, setCustomProductsExpanded] = useState(false);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
-
-  const DEFAULT_IDS = ['1','2','3','4','5','6','7','8','9','10','11','12','100','101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','200','201','202','203','204','205','206','207','208','209','210','300','301','302','303','304','305','306','307','308','400','500','501','502','503','504','505','506','507','508','600','601','602','603','700','701','702','703','704','705','706','707','708','709','710','711','712','713','714','715','716','717','800','801','802','803','804','805','806','807','808','809','810','811','900','901','902','903','904','905','906','1000','1001','1002','1003','1004','1005','1006','1007','1008','1009','1010','1011','1012','1013','1100','1101','1102','1103','1200','1201','1202'];
 
   const favoriteProducts = useMemo(() => products.filter((p) => favoriteIds.includes(p.id)), [products, favoriteIds]);
   const displayedFavorites = useMemo(() => favoritesExpanded ? favoriteProducts : favoriteProducts.slice(0, 3), [favoriteProducts, favoritesExpanded]);
   const userRecipes = useMemo(() => recipes.filter((r) => r.isUserRecipe), [recipes]);
   const displayedUserRecipes = useMemo(() => userRecipesExpanded ? userRecipes : userRecipes.slice(0, 3), [userRecipes, userRecipesExpanded]);
   const readyRecipes = useMemo(() => recipes.filter((r) => !r.isUserRecipe), [recipes]);
-  const customProducts = useMemo(() => products.filter((p) => !DEFAULT_IDS.includes(p.id)), [products]);
+  const customProducts = useMemo(() => products.filter((p) => !p.isDefault), [products]);
+  const displayedCustomProducts = useMemo(() => customProductsExpanded ? customProducts : customProducts.slice(0, 3), [customProducts, customProductsExpanded]);
   const filteredReady = selectedCategory === 'all' ? readyRecipes : readyRecipes.filter((r) => r.category === selectedCategory);
 
   const [toastMsg, setToastMsg] = useState('');
@@ -135,7 +135,7 @@ export default function ExploreScreen() {
               <Text style={[styles.sectionTitle, { color: '#3A6FD8' }]}>
                 <MaterialIcons name="playlist-add" size={16} color="#5B8DEF" /> Добавленные мной
               </Text>
-              {customProducts.map((p) => (
+              {displayedCustomProducts.map((p) => (
                 <View key={p.id} style={[styles.productItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TouchableOpacity style={{ flex: 1 }} onPress={() => { setFavAddGrams(p.packageGrams?.toString() ?? '100'); setFavAddProduct(p); }} activeOpacity={0.85}>
                     <View style={styles.productInfo}>
@@ -160,6 +160,12 @@ export default function ExploreScreen() {
                   </View>
                 </View>
               ))}
+              {customProducts.length > 3 && (
+                <TouchableOpacity style={styles.expandRow} onPress={() => setCustomProductsExpanded((v) => !v)} activeOpacity={0.85}>
+                  <Text style={[styles.expandText, { color: colors.primary }]}>{customProductsExpanded ? 'Свернуть' : `Еще ${customProducts.length - 3}`}</Text>
+                  <MaterialIcons name={customProductsExpanded ? 'expand-less' : 'expand-more'} size={20} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           )}
 

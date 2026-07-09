@@ -15,7 +15,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const result = [];
     for (const r of recipes) {
       const ingredients = await pool.query(
-        `SELECT ri.*, p.name as product_name FROM recipe_ingredients ri
+        `SELECT ri.*, p.name as product_name, p.calories_per_100, p.proteins_per_100, p.fats_per_100, p.carbs_per_100 FROM recipe_ingredients ri
          JOIN products p ON p.id = ri.product_id WHERE ri.recipe_id = ?`,
         [r.id]
       );

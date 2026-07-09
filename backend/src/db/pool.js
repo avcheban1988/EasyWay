@@ -4,19 +4,12 @@ const fs = require('fs');
 const { promisify } = require('util');
 const dotenv = require('dotenv');
 
-// � Загрузка .env — сначала .env (локально), потом .env.production (сервер)
 const envDev = path.resolve(__dirname, '../../.env');
 const envProd = path.resolve(__dirname, '../../.env.production');
 const envPath = fs.existsSync(envDev) ? envDev : envProd;
 dotenv.config({ path: envPath });
 
-console.log('📦 ЗАГРУЖЕН .ENV:', envPath);
-console.log('🔌 ПАРАМЕТРЫ БД:', {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
-});
+console.log('LOADED .ENV:', envPath);
 
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
@@ -29,11 +22,28 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
-// Обёртка для промисов (совместимость с существующими routes)
+// Hotfix: patch mysql2's iconv-lite to handle 'undefined' encoding gracefully
+try {
+  const Iconv = require('mysql2/node_modules/iconv-lite');
+  const origGetEncoder = Iconv.getEncoder;
+  Iconv.getEncoder = function(encoding, options) {
+    if (!encoding || encoding === 'undefined') encoding = 'utf8';
+    return origGetEncoder.call(this, encoding, options);
+  };
+  const origGetDecoder = Iconv.getDecoder;
+  Iconv.getDecoder = function(encoding, options) {
+    if (!encoding || encoding === 'undefined') encoding = 'utf8';
+    return origGetDecoder.call(this, encoding, options);
+  };
+  console.log('ICONV PATCHED');
+} catch (e) {
+  console.log('ICONV PATCH FAILED:', e.message);
+}
+
+// Promisify for compatibility with existing routes
 pool.query = promisify(pool.query);
 pool.getConnection = promisify(pool.getConnection);
 
-// 🔍 Проверка подключения к БД
 async function checkConnection() {
   try {
     const connection = await new Promise((resolve, reject) => {
@@ -42,29 +52,25 @@ async function checkConnection() {
         else resolve(conn);
       });
     });
-    console.log('✅ Подключение к базе данных успешно установлено');
+    console.log('DB CONNECTED');
     connection.release();
   } catch (error) {
-    console.error('❌ Не удалось подключиться к базе данных:', error);
+    console.error('DB CONNECT FAILED:', error);
   }
 }
 
-// 🔌 Закрытие всех соединений в пуле
 function closeConnection() {
   return new Promise((resolve, reject) => {
     pool.end((err) => {
-      if (err) {
-        console.error('❌ Ошибка при закрытии соединений:', err);
-        reject(err);
-      } else {
-        console.log('🔌 Все соединения с базой данных закрыты');
+      if (err) reject(err);
+      else {
+        console.log('DB DISCONNECTED');
         resolve();
       }
     });
   });
 }
 
-// Авто-проверка при запуске
 checkConnection();
 
 module.exports = pool;

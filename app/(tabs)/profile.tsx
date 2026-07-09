@@ -14,6 +14,7 @@ import {
     Alert,
     Animated,
     Keyboard,
+    KeyboardAvoidingView,
     Platform,
     ScrollView,
     StyleSheet,
@@ -126,7 +127,7 @@ export default function ProfileScreen() {
       let timer: ReturnType<typeof setTimeout> | null = null;
       return () => {
         if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
+        timer = setTimeout(async () => {
           const s = useUserStore.getState();
           s.setName(localName);
           if (localGoal) s.setGoal(localGoal);
@@ -141,6 +142,7 @@ export default function ProfileScreen() {
             const c = Number(localManualCarbs) || 0;
             if (p && f && c) s.setManualMacros(p, f, c);
           }
+          await s.saveProfile();
         }, 600);
       };
     })(),
@@ -211,6 +213,7 @@ export default function ProfileScreen() {
 
   return (
     <MainTabBackground>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.title, { color: colors.text }]}>Настройки профиля</Text>
@@ -240,7 +243,7 @@ export default function ProfileScreen() {
             <View style={styles.nameActionsWrap}>
               {localName !== (userProfile.name ?? '') && (
                 <View style={styles.nameActions}>
-                  <TouchableOpacity style={[styles.nameConfirmBtn, { backgroundColor: '#53B175' }]} onPress={() => { Keyboard.dismiss(); setName(localName); }} activeOpacity={0.85}>
+                  <TouchableOpacity style={[styles.nameConfirmBtn, { backgroundColor: '#53B175' }]} onPress={() => { Keyboard.dismiss(); setName(localName); useUserStore.getState().saveProfile(); }} activeOpacity={0.85}>
                     <MaterialIcons name="check" size={20} color="#fff" />
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.nameCancelBtn, { borderColor: colors.border }]} onPress={() => { Keyboard.dismiss(); setLocalName(userProfile.name ?? ''); }} activeOpacity={0.85}>
@@ -551,6 +554,7 @@ export default function ProfileScreen() {
         <Text style={styles.logoutText}>Выйти</Text>
       </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Модальное окно с результатами пересчёта */}
       <InfoModal visible={resultsModalVisible} onClose={() => setResultsModalVisible(false)} title="Новая норма">
@@ -581,7 +585,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 120 },
   card: {
     borderRadius: 16, borderWidth: 1, padding: 18, marginBottom: 16,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12,

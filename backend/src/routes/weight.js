@@ -21,19 +21,19 @@ router.get('/', auth, async (req, res) => {
 // Добавить или обновить запись веса
 router.post('/', auth, async (req, res) => {
   try {
-    const { weight, date } = req.body;
-    const d = date || new Date().toISOString().slice(0, 10);
-    // UPSERT: если есть запись за эту дату — обновляем
-    await pool.query(
-      `INSERT INTO weight_entries (user_id, date, weight) VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE weight = VALUES(weight)`,
-      [req.userId, d, weight]
+    const w = parseFloat(req.body.weight);
+    if (isNaN(w) || w < 20 || w > 500) {
+      return res.status(400).json({ error: 'Некорректный вес' });
+    }
+    const d = req.body.date || new Date().toISOString().slice(0, 10);
+    const weightVal = Math.round(w * 10) / 10;
+    // Удаляем старую запись за эту дату и вставляем новую
+    await pool.query('DELETE FROM weight_entries WHERE user_id = ? AND date = ?', [req.userId, d]);
+    const result = await pool.query(
+      `INSERT INTO weight_entries (user_id, date, weight) VALUES (?, ?, ?)`,
+      [req.userId, d, weightVal]
     );
-    const rows = await pool.query(
-      `SELECT * FROM weight_entries WHERE user_id = ? AND date = ?`,
-      [req.userId, d]
-    );
-    res.json({ id: String(rows[0].id), date: d, weight });
+    res.status(201).json({ id: String(result.insertId), date: d, weight: weightVal });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Ошибка сервера' });

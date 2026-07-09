@@ -191,10 +191,10 @@ export default function HomeScreen() {
 
               <TouchableOpacity
                 onPress={handleNextDay}
-                style={[styles.arrowBtn, isToday && styles.arrowDisabled]}
-                activeOpacity={isToday ? 1 : 0.7}
+                style={styles.arrowBtn}
+                activeOpacity={0.7}
               >
-                <MaterialIcons name="chevron-right" size={28} color={isToday ? '#B0CAB5' : '#3D8C54'} />
+                <MaterialIcons name="chevron-right" size={28} color="#3D8C54" />
               </TouchableOpacity>
             </View>
 
