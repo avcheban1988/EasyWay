@@ -42,3 +42,4 @@ app-example
 /ios
 /android
 assets/barcodes.csv
+backend/.env.production
