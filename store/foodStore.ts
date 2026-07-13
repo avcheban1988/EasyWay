@@ -19,31 +19,48 @@ type MacroTotals = { calories: number; proteins: number; fats: number; carbs: nu
 
 interface FoodStore {
   foodEntries: FoodEntry[];
+  recentProducts: { name: string; grams: number }[];
   hydrated: boolean;
   addFoodEntry: (entry: Omit<FoodEntry, 'id' | 'date'> & { date?: string }) => Promise<void>;
   removeFoodEntry: (id: string) => void;
   getEntriesForDate: (date: string) => FoodEntry[];
   getTotalsForDate: (date: string) => MacroTotals;
   loadFoodEntries: () => Promise<void>;
+  loadRecentProducts: () => Promise<void>;
 }
 
 export const useFoodStore = create<FoodStore>((set, get) => ({
   foodEntries: [],
+  recentProducts: [],
   hydrated: false,
 
   loadFoodEntries: async () => {
     try {
       const entries = await api.getFoodEntries(new Date().toISOString().slice(0, 10));
-      set({ foodEntries: entries, hydrated: true });
+      // Загружаем недавние продукты
+      let recent: { name: string; grams: number }[] = [];
+      try {
+        recent = await api.getRecentProducts();
+      } catch {}
+      set({ foodEntries: entries, recentProducts: recent, hydrated: true });
     } catch {
       set({ hydrated: true });
     }
   },
 
+  loadRecentProducts: async () => {
+    try {
+      const recent = await api.getRecentProducts();
+      set({ recentProducts: recent });
+    } catch {}
+  },
+
   addFoodEntry: async (entry) => {
     try {
       const created = await api.addFoodEntry(entry);
-      set((s) => ({ foodEntries: [...s.foodEntries, created] }));
+      set((s) => ({
+        foodEntries: [...s.foodEntries, created],
+      }));
     } catch {
       const local: FoodEntry = {
         id: `tmp-${Date.now()}`,
@@ -56,7 +73,9 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
         grams: entry.grams,
         date: entry.date || new Date().toISOString().slice(0, 10),
       };
-      set((s) => ({ foodEntries: [...s.foodEntries, local] }));
+      set((s) => ({
+        foodEntries: [...s.foodEntries, local],
+      }));
     }
   },
 

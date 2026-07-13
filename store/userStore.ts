@@ -18,6 +18,7 @@ export interface UserProfile {
   isMassGainMode: boolean;
   isOnboarded: boolean;
   isPremium: boolean;
+  premiumUntil: string | null;
   manualProteins: number | null;
   manualFats: number | null;
   manualCarbs: number | null;
@@ -65,6 +66,7 @@ const defaultProfile: UserProfile = {
   isMassGainMode: false,
   isOnboarded: false,
   isPremium: false,
+  premiumUntil: null,
   manualProteins: null,
   manualFats: null,
   manualCarbs: null,
@@ -84,6 +86,7 @@ function mapApiToProfile(u: any): UserProfile {
     isMassGainMode: !!u.is_mass_gain_mode,
     isOnboarded: !!u.is_onboarded,
     isPremium: !!u.is_premium,
+    premiumUntil: u.premium_until || null,
     manualProteins: u.manual_proteins ?? null,
     manualFats: u.manual_fats ?? null,
     manualCarbs: u.manual_carbs ?? null,

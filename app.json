@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyNewApp",
-    "slug": "MyNewApp",
+    "name": "Ем сам",
+    "slug": "em-sam",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Logo.png",

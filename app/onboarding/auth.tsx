@@ -60,7 +60,7 @@ export default function AuthScreen() {
   // Всегда используем режим телефона, независимо от аккаунта
 
   const ctaText = mode === 'signup' ? 'Зарегистрироваться' : 'Войти';
-  const titleText = 'EasyWay';
+  const titleText = 'Ем сам';
 
   // Ротатор цитат для экрана входа
   const quotes = [
@@ -103,9 +103,11 @@ export default function AuthScreen() {
     if (!core) return '';
     if (core.length >= 10) {
       const national = core.slice(-10);
-      const part1 = national.slice(0, 3);
-      const part2 = national.slice(3);
-      return `+7 ${part1} ${part2}`;
+      const p1 = national.slice(0, 3);
+      const p2 = national.slice(3, 6);
+      const p3 = national.slice(6, 8);
+      const p4 = national.slice(8, 10);
+      return `+7 ${p1} ${p2} ${p3} ${p4}`;
     }
     const p1 = core.slice(0, 3);
     const p2 = core.slice(3);

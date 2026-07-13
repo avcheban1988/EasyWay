@@ -53,7 +53,7 @@ export default function Index() {
       <View style={styles.centerBlock}>
         <Image source={require('../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
         <View style={styles.textBlock}>
-          <Text style={[Typography.display, styles.title]}>EasyWay</Text>
+          <Text style={[Typography.display, styles.title]}>Ем сам</Text>
           <Text style={[Typography.caption, styles.subtitle]}>счетчик калорий</Text>
         </View>
       </View>

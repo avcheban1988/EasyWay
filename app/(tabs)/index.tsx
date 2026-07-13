@@ -3,11 +3,13 @@ import { MacrosDisplay } from '@/components/ui/macros-display';
 import { MainTabBackground } from '@/components/ui/main-tab-background';
 import SummaryCard from '@/components/ui/summary-card';
 import { SurfaceCard } from '@/components/ui/surface-card';
+import { WaterCounter } from '@/components/ui/water-counter';
 import { Colors, Typography, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/store/authStore';
 import { useFoodStore } from '@/store/foodStore';
 import { useUserStore } from '@/store/userStore';
+import { useWaterStore } from '@/store/waterStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRootNavigationState, useRouter } from 'expo-router';
@@ -49,6 +51,7 @@ export default function HomeScreen() {
   const { userProfile, dailyMacros, loadProfile } = useUserStore();
   const { loadFoodEntries, removeFoodEntry, addFoodEntry, getEntriesForDate, getTotalsForDate } = useFoodStore();
   const { checkAuth } = useAuthStore();
+  const { load: loadWater } = useWaterStore();
 
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -67,6 +70,7 @@ export default function HomeScreen() {
       if (!token) return;
       await loadProfile();
       await loadFoodEntries();
+      await loadWater();
     };
     initialize();
   }, [loadFoodEntries, loadProfile, rootNavigationState?.key, router]);
@@ -249,6 +253,9 @@ export default function HomeScreen() {
             );
           });
         })()}
+
+        {/* Счётчик воды (только премиум) */}
+        {userProfile.isPremium && <WaterCounter />}
 
         {/* Отступ после последнего блока */}
         <View style={{ height: 20 }} />

@@ -1,9 +1,11 @@
 import { Colors, fontFamily } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { api } from '@/lib/api';
 import { MealType, useFoodStore } from '@/store/foodStore';
 import { Product, useProductStore } from '@/store/productStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -38,7 +40,7 @@ export default function AddFoodScreen() {
   const params = useLocalSearchParams<{ date?: string; mealType?: string }>();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { addFoodEntry } = useFoodStore();
+  const { addFoodEntry, recentProducts } = useFoodStore();
   const { products, searchProducts, searchByBarcode, addProduct, toggleFavorite, favoriteIds, load: loadProducts } = useProductStore();
 
   const [mealType, setMealType] = useState<MealType>((params.mealType as MealType) || getDefaultMealType());
@@ -61,12 +63,35 @@ export default function AddFoodScreen() {
   const [portions, setPortions] = useState('1');
   const [grams, setGrams] = useState('');
   const [addedFeedback, setAddedFeedback] = useState(false);
+  const [recentAddedIdx, setRecentAddedIdx] = useState<number | null>(null);
+  const recentAddedScale = useRef(new Animated.Value(1)).current;
+  const recentAddedOpacity = useRef(new Animated.Value(1)).current;
   const [barcodeModal, setBarcodeModal] = useState(false);
   const [barcodeValue, setBarcodeValue] = useState('');
   const [barcodeScanning, setBarcodeScanning] = useState(true);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
+  // AI (DeepSeek)
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiLoadingText, setAiLoadingText] = useState('');
+  const [textModalVisible, setTextModalVisible] = useState(false);
+  const [textDescription, setTextDescription] = useState('');
+  const [aiResultData, setAiResultData] = useState<{
+    name: string;
+    caloriesPer100: number;
+    proteinsPer100: number;
+    fatsPer100: number;
+    carbsPer100: number;
+    grams: number;
+  } | null>(null);
+  const [showAiResult, setShowAiResult] = useState(false);
+
   useEffect(() => { loadProducts(); }, [loadProducts]);
+
+  // Загружаем недавние продукты при открытии экрана
+  useEffect(() => {
+    useFoodStore.getState().loadRecentProducts();
+  }, []);
 
   // Debounce поиска
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -114,13 +139,148 @@ export default function AddFoodScreen() {
     }
   };
 
-  const handleTakePhoto = () => {
-    // имитация фото
-    setTimeout(() => {
-      const random = products[Math.floor(Math.random() * products.length)];
-      setSelectedProduct(random);
-      setMode('manual');
-    }, 2000);
+  const handleTakePhoto = async () => {
+    setAiLoading(true);
+    setAiLoadingText('Открываем камеру...');
+
+    try {
+      // Запрашиваем разрешение камеры
+      if (cameraPermission && !cameraPermission.granted) {
+        const result = await requestCameraPermission();
+        if (!result.granted) {
+          setAiLoading(false);
+          return;
+        }
+      }
+
+      let imageBase64: string | null = null;
+
+      // Пробуем камеру
+      try {
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          quality: 0.6,
+          base64: true,
+          maxWidth: 1024,
+          maxHeight: 1024,
+        });
+        if (!result.canceled && result.assets?.[0]?.base64) {
+          imageBase64 = result.assets[0].base64;
+        }
+      } catch {
+        // fallback — галерея
+      }
+
+      // Если камера не дала результат — галерея
+      if (!imageBase64) {
+        const galleryPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!galleryPerm.granted) {
+          setAiLoading(false);
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.6,
+          base64: true,
+          maxWidth: 1024,
+          maxHeight: 1024,
+        });
+        if (!result.canceled && result.assets?.[0]?.base64) {
+          imageBase64 = result.assets[0].base64;
+        }
+      }
+
+      if (!imageBase64) {
+        setAiLoading(false);
+        return;
+      }
+
+      setAiLoadingText('Анализируем фото через AI...');
+      const aiResult = await api.analyzePhoto(imageBase64);
+
+      // Создаём продукт из результата
+      await addProduct({
+        name: aiResult.name,
+        caloriesPer100: aiResult.caloriesPer100,
+        proteinsPer100: aiResult.proteinsPer100,
+        fatsPer100: aiResult.fatsPer100,
+        carbsPer100: aiResult.carbsPer100,
+      });
+
+      const freshProducts = useProductStore.getState().products;
+      const found = freshProducts.find((p) => p.name === aiResult.name);
+      if (found) {
+        setSelectedProduct(found);
+        setGrams('100');
+        setPortions('1');
+      }
+    } catch (err: any) {
+      console.error('[AI Photo]', err);
+    } finally {
+      setAiLoading(false);
+      setAiLoadingText('');
+    }
+  };
+
+  const handleTextAnalysis = async () => {
+    if (!textDescription.trim()) return;
+    setTextModalVisible(false);
+    setAiLoading(true);
+    setAiLoadingText('Анализируем описание через AI...');
+    try {
+      const aiResult = await api.analyzeText(textDescription);
+      // Пытаемся извлечь вес из текста
+      const weightMatch = textDescription.match(/(\d+)\s*(г|грамм|граммов|гр)/i);
+      const grams = weightMatch ? parseInt(weightMatch[1], 10) : 100;
+
+      setAiResultData({
+        name: aiResult.name,
+        caloriesPer100: aiResult.caloriesPer100,
+        proteinsPer100: aiResult.proteinsPer100,
+        fatsPer100: aiResult.fatsPer100,
+        carbsPer100: aiResult.carbsPer100,
+        grams,
+      });
+      setShowAiResult(true);
+    } catch (err: any) {
+      console.error('[AI Text]', err);
+    } finally {
+      setAiLoading(false);
+      setAiLoadingText('');
+    }
+  };
+
+  const handleAddAiResult = async () => {
+    if (!aiResultData) return;
+    const { name, caloriesPer100, proteinsPer100, fatsPer100, carbsPer100, grams } = aiResultData;
+    const mult = grams / 100;
+
+    // Сохраняем продукт в БД
+    await addProduct({ name, caloriesPer100, proteinsPer100, fatsPer100, carbsPer100 });
+
+    // Добавляем в дневник
+    await addFoodEntry({
+      mealType,
+      name,
+      calories: Math.round(caloriesPer100 * mult),
+      proteins: Math.round(proteinsPer100 * mult * 10) / 10,
+      fats: Math.round(fatsPer100 * mult * 10) / 10,
+      carbs: Math.round(carbsPer100 * mult * 10) / 10,
+      grams,
+      date: params.date,
+    });
+
+    setShowAiResult(false);
+    setAiResultData(null);
+    setTextDescription('');
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 1500);
+  };
+
+  const handleEditAiResult = () => {
+    setShowAiResult(false);
+    // Открываем модалку с тем же текстом
+    setTimeout(() => setTextModalVisible(true), 300);
   };
 
   const handleSelectProduct = (p: Product) => {
@@ -261,9 +421,9 @@ export default function AddFoodScreen() {
           <MaterialIcons name="camera-alt" size={24} color="#F8A44C" />
           <Text style={[styles.actionText, { color: '#F8A44C' }]}>Фото</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: hexToRgba('#D3B0E0', 0.12), borderColor: '#D3B0E0' }]} onPress={() => { setMode('manual'); setSelectedProduct(null); }} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: hexToRgba('#D3B0E0', 0.12), borderColor: '#D3B0E0' }]} onPress={() => { setTextDescription(''); setTextModalVisible(true); }} activeOpacity={0.85}>
           <MaterialIcons name="edit-note" size={24} color="#D3B0E0" />
-          <Text style={[styles.actionText, { color: '#D3B0E0' }]}>Текст</Text>
+          <Text style={[styles.actionText, { color: '#D3B0E0' }]}>AI Текст</Text>
         </TouchableOpacity>
       </View>
 
@@ -368,6 +528,80 @@ export default function AddFoodScreen() {
 
 {/* Форма ручного добавления (рендерится внутри блока «ничего не найдено») */}
 
+      {/* Недавно добавленные */}
+      {!selectedProduct && recentProducts.length > 0 && (
+        <View style={[styles.recentSection, { borderColor: colors.border }]}>
+          <Text style={[styles.recentTitle, { color: colors.text }]}>Недавно добавленные</Text>
+          {recentProducts.map((item, idx) => {
+            const product = products.find((p) => p.name === item.name);
+            const isThisAdded = recentAddedIdx === idx;
+            return (
+              <TouchableOpacity
+                key={`${item.name}-${idx}`}
+                style={[styles.resultItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  if (product) {
+                    setSelectedProduct(product);
+                    setGrams(item.grams.toString());
+                    setPortions('1');
+                  }
+                }}
+                activeOpacity={0.85}
+              >
+                <View style={styles.resultInfo}>
+                  <Text style={[styles.resultName, { color: colors.text }]}>{item.name}</Text>
+                  {product && (
+                    <Text style={[styles.resultMacros, { color: colors.icon }]}>
+                      {product.caloriesPer100} ккал · Б {product.proteinsPer100} / Ж {product.fatsPer100} / У {product.carbsPer100} · {item.grams}г
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={[styles.recentAddBtn, { backgroundColor: isThisAdded ? hexToRgba('#53B175', 0.25) : hexToRgba('#53B175', 0.12), borderColor: isThisAdded ? '#2E7D32' : '#53B175' }]}
+                  onPress={async () => {
+                    if (!product || isThisAdded) return;
+                    const mult = item.grams / 100;
+                    await addFoodEntry({
+                      mealType,
+                      name: product.name,
+                      calories: Math.round(product.caloriesPer100 * mult),
+                      proteins: Math.round(product.proteinsPer100 * mult * 10) / 10,
+                      fats: Math.round(product.fatsPer100 * mult * 10) / 10,
+                      carbs: Math.round(product.carbsPer100 * mult * 10) / 10,
+                      grams: item.grams,
+                      date: params.date,
+                    });
+                    // Анимация: показать галочку с масштабом
+                    setRecentAddedIdx(idx);
+                    recentAddedScale.setValue(0.5);
+                    recentAddedOpacity.setValue(1);
+                    Animated.parallel([
+                      Animated.spring(recentAddedScale, { toValue: 1, useNativeDriver: true }),
+                    ]).start();
+                    setTimeout(() => {
+                      Animated.timing(recentAddedOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+                        setRecentAddedIdx(null);
+                        recentAddedOpacity.setValue(1);
+                        recentAddedScale.setValue(1);
+                      });
+                    }, 1500);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  {isThisAdded ? (
+                    <Animated.View style={{ transform: [{ scale: recentAddedScale }], opacity: recentAddedOpacity }}>
+                      <MaterialIcons name="check" size={20} color="#2E7D32" />
+                    </Animated.View>
+                  ) : (
+                    <MaterialIcons name="add" size={20} color="#53B175" />
+                  )}
+                </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
       <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => router.back()} activeOpacity={0.85}>
         <Text style={[styles.cancelText, { color: colors.icon }]}>Готово</Text>
       </TouchableOpacity>
@@ -459,6 +693,121 @@ export default function AddFoodScreen() {
             >
               <Text style={[styles.barcodeDismissText, { color: colors.icon }]}>Закрыть</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* AI загрузка */}
+      {aiLoading && (
+        <View style={styles.barcodeOverlay}>
+          <View style={[styles.barcodeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.barcodeTitle, { color: colors.text }]}>AI анализ</Text>
+            <View style={{ paddingVertical: 30, alignItems: 'center' }}>
+              <MaterialIcons name="smart-toy" size={48} color={colors.primary} />
+              <Text style={[styles.barcodeHint, { color: colors.text, marginTop: 12 }]}>{aiLoadingText}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Модалка текстового описания */}
+      {textModalVisible && (
+        <View style={styles.barcodeOverlay}>
+          <View style={[styles.barcodeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.barcodeTitle, { color: colors.text }]}>Опишите блюдо</Text>
+            <Text style={[styles.barcodeHint, { color: colors.icon }]}>
+              Например: «куриный суп с лапшой и морковью» или «греческий салат с фетой и оливками»
+            </Text>
+            <TextInput
+              style={[styles.textModalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder="Введите описание..."
+              placeholderTextColor={colors.icon}
+              value={textDescription}
+              onChangeText={setTextDescription}
+              multiline
+              autoFocus
+            />
+            <View style={{ flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 16, width: '80%' }}>
+              <TouchableOpacity
+                style={[styles.photoSourceBtn, { backgroundColor: '#D3B0E0', borderColor: '#D3B0E0', opacity: textDescription.trim() ? 1 : 0.5, width: '100%' }]}
+                onPress={handleTextAnalysis}
+                activeOpacity={0.85}
+                disabled={!textDescription.trim()}
+              >
+                <Text style={{ fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' }}>Анализировать</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.barcodeDismiss, { borderColor: colors.border, width: '100%' }]}
+                onPress={() => setTextModalVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.barcodeDismissText, { color: colors.icon }]}>Отмена</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* AI результат текстового анализа */}
+      {showAiResult && aiResultData && (
+        <View style={styles.barcodeOverlay}>
+          <View style={[styles.barcodeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.barcodeTitle, { color: colors.text }]}>Результат анализа</Text>
+
+            <View style={[styles.aiResultBlock, { backgroundColor: colors.backgroundSoft }]}>
+              <Text style={[styles.aiResultName, { color: colors.text }]}>{aiResultData.name}</Text>
+              <View style={styles.aiResultRow}>
+                <Text style={[styles.aiResultLabel, { color: colors.icon }]}>Вес:</Text>
+                <Text style={[styles.aiResultValue, { color: colors.text }]}>{aiResultData.grams} г</Text>
+              </View>
+              <View style={styles.aiResultDivider} />
+              <View style={styles.aiResultRow}>
+                <Text style={[styles.aiResultLabel, { color: colors.icon }]}>Калории:</Text>
+                <Text style={[styles.aiResultValue, { color: '#F8A44C' }]}>
+                  {Math.round(aiResultData.caloriesPer100 * aiResultData.grams / 100)} ккал
+                </Text>
+              </View>
+              <View style={styles.aiResultRow}>
+                <Text style={[styles.aiResultLabel, { color: colors.icon }]}>Белки:</Text>
+                <Text style={[styles.aiResultValue, { color: colors.text }]}>
+                  {Math.round(aiResultData.proteinsPer100 * aiResultData.grams / 100 * 10) / 10} г
+                </Text>
+              </View>
+              <View style={styles.aiResultRow}>
+                <Text style={[styles.aiResultLabel, { color: colors.icon }]}>Жиры:</Text>
+                <Text style={[styles.aiResultValue, { color: colors.text }]}>
+                  {Math.round(aiResultData.fatsPer100 * aiResultData.grams / 100 * 10) / 10} г
+                </Text>
+              </View>
+              <View style={styles.aiResultRow}>
+                <Text style={[styles.aiResultLabel, { color: colors.icon }]}>Углеводы:</Text>
+                <Text style={[styles.aiResultValue, { color: colors.text }]}>
+                  {Math.round(aiResultData.carbsPer100 * aiResultData.grams / 100 * 10) / 10} г
+                </Text>
+              </View>
+              <Text style={[styles.aiResultPer100, { color: colors.icon }]}>
+                (на 100г: {aiResultData.caloriesPer100} ккал · Б{aiResultData.proteinsPer100} / Ж{aiResultData.fatsPer100} / У{aiResultData.carbsPer100})
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 12, width: '80%' }}>
+              <TouchableOpacity
+                style={[styles.photoSourceBtn, { backgroundColor: '#53B175', borderColor: '#53B175', width: '100%' }]}
+                onPress={handleAddAiResult}
+                activeOpacity={0.85}
+              >
+                <MaterialIcons name="add" size={20} color="#fff" />
+                <Text style={{ fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#fff' }}>Добавить</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.photoSourceBtn, { backgroundColor: hexToRgba('#D3B0E0', 0.12), borderColor: '#D3B0E0', width: '100%' }]}
+                onPress={handleEditAiResult}
+                activeOpacity={0.85}
+              >
+                <MaterialIcons name="edit" size={20} color="#D3B0E0" />
+                <Text style={{ fontFamily: fontFamily('semiBold'), fontSize: 15, color: '#D3B0E0' }}>Изменить</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -568,4 +917,29 @@ const styles = StyleSheet.create({
   barcodeNotFound: { fontFamily: fontFamily('regular'), fontSize: 14, marginTop: 8, marginBottom: 12, textAlign: 'center' },
   barcodeAddNew: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, marginTop: 4 },
   barcodeAddNewText: { fontFamily: fontFamily('semiBold'), fontSize: 14, color: '#fff' },
+
+  // Недавно добавленные
+  recentSection: { borderTopWidth: 1, paddingTop: 12, marginBottom: 16 },
+  recentTitle: { fontFamily: fontFamily('semiBold'), fontSize: 15, marginBottom: 10 },
+  recentAddBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+
+  // AI фото/текст
+  photoSourceBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, marginBottom: 8,
+  },
+  photoSourceText: { fontFamily: fontFamily('semiBold'), fontSize: 16 },
+  textModalInput: {
+    fontFamily: fontFamily('regular'), fontSize: 16, padding: 12, borderWidth: 1,
+    borderRadius: 10, minHeight: 100, textAlignVertical: 'top', width: '100%',
+  },
+  aiResultBlock: {
+    borderRadius: 12, padding: 16, width: '100%', marginBottom: 8,
+  },
+  aiResultName: { fontFamily: fontFamily('bold'), fontSize: 18, marginBottom: 10, textAlign: 'center' },
+  aiResultRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  aiResultLabel: { fontFamily: fontFamily('regular'), fontSize: 14 },
+  aiResultValue: { fontFamily: fontFamily('semiBold'), fontSize: 14 },
+  aiResultDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.08)', marginVertical: 6 },
+  aiResultPer100: { fontFamily: fontFamily('regular'), fontSize: 11, textAlign: 'center', marginTop: 6 },
 });

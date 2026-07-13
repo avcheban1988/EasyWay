@@ -64,3 +64,21 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// Последние 10 уникальных продуктов пользователя
+router.get('/recent-products', auth, async (req, res) => {
+  try {
+    const rows = await pool.query(
+      `SELECT name, grams FROM food_entries
+       WHERE user_id = ? AND name IS NOT NULL AND name != ''
+       GROUP BY name
+       ORDER BY MAX(created_at) DESC
+       LIMIT 10`,
+      [req.userId]
+    );
+    res.json(rows.map(r => ({ name: r.name, grams: r.grams || 100 })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});

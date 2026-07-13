@@ -225,10 +225,14 @@ export default function ProfileScreen() {
           <View style={styles.fieldGroup}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={[styles.fieldLabel, { color: colors.text }]}>Имя</Text>
-              {userProfile.isPremium && (
+              {userProfile.isPremium ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFD700', borderRadius: 8 }}>
                   <MaterialIcons name="star" size={14} color="#B8860B" />
                   <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#B8860B' }}>PREMIUM</Text>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#E0E0E0', borderRadius: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#666' }}>БАЗОВЫЙ</Text>
                 </View>
               )}
             </View>
@@ -252,6 +256,26 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
+          </View>
+
+          {/* Тариф */}
+          <View style={[styles.tariffCard, { backgroundColor: userProfile.isPremium ? 'rgba(255,215,0,0.1)' : 'rgba(0,0,0,0.03)', borderColor: userProfile.isPremium ? '#FFD700' : colors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <MaterialIcons name={userProfile.isPremium ? 'star' : 'person-outline'} size={20} color={userProfile.isPremium ? '#B8860B' : colors.icon} />
+              <Text style={[styles.tariffText, { color: colors.text }]}>
+                {userProfile.isPremium ? 'Премиум' : 'Базовый'}
+              </Text>
+            </View>
+            {userProfile.premiumUntil && (
+              <Text style={[styles.tariffDate, { color: colors.icon }]}>
+                Действует до: {new Date(userProfile.premiumUntil).toLocaleDateString('ru-RU')}
+              </Text>
+            )}
+            {!userProfile.isPremium && (
+              <Text style={[styles.tariffHint, { color: colors.primary }]}>
+                Функции премиум: распознавание по фото и тексту, счётчик воды
+              </Text>
+            )}
           </View>
 
           {/* Цель — свёрнуто/развёрнуто */}
@@ -724,4 +748,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF0F0', borderColor: '#E53935', marginTop: 8, marginBottom: 20,
   },
   logoutText: { fontFamily: fontFamily('semiBold'), fontSize: 16, color: '#E53935' },
+
+  // Тариф
+  tariffCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 16, flexWrap: 'wrap',
+  },
+  tariffText: { fontFamily: fontFamily('semiBold'), fontSize: 15 },
+  tariffDate: { fontFamily: fontFamily('regular'), fontSize: 12, width: '100%', marginTop: 4 },
+  tariffHint: { fontFamily: fontFamily('regular'), fontSize: 12, width: '100%', marginTop: 4 },
 });

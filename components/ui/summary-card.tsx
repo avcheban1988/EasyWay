@@ -142,7 +142,7 @@ export function SummaryCard() {
     <Animated.View style={[styles.card, Shadows.card, { backgroundColor: colors.card, borderColor: colors.border, height: animHeight }]}> 
       <View style={styles.topRow}>
         <View style={styles.titleWrap}>
-          <Text style={[styles.title, { color: colors.text }]}>EasyWay</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Ем сам</Text>
           <Text style={[styles.greeting, { color: colors.icon }]}>Привет, {name} 👋</Text>
         </View>
         <View style={styles.logoWrap}>

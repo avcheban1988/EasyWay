@@ -128,6 +128,7 @@ router.get('/profile', auth, async (req, res) => {
       daily_fats: u.daily_fats,
       daily_carbs: u.daily_carbs,
       is_premium: !!u.is_premium,
+      premium_until: u.premium_until || null,
       is_onboarded: !!u.is_onboarded,
     });
   } catch (err) {
@@ -182,6 +183,7 @@ router.put('/profile', auth, async (req, res) => {
       daily_fats: u.daily_fats,
       daily_carbs: u.daily_carbs,
       is_premium: !!u.is_premium,
+      premium_until: u.premium_until || null,
       is_onboarded: !!u.is_onboarded,
     });
   } catch (err) {

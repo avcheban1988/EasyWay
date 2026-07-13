@@ -112,6 +112,8 @@ class ApiClient {
 
   deleteFoodEntry = (id: string) => this.request<any>('DELETE', `/food/${id}`);
 
+  getRecentProducts = () => this.request<{ name: string; grams: number }[]>('GET', '/food/recent-products');
+
   // Recipes
   getRecipes = () => this.request<any[]>('GET', '/recipes');
 
@@ -124,6 +126,18 @@ class ApiClient {
 
   addWeightEntry = (weight: number, date?: string) =>
     this.request<any>('POST', '/weight', { weight, date });
+
+  // Water
+  getWaterIntake = () => this.request<{ ml: number; id?: string }>('GET', '/water');
+
+  addWaterIntake = (ml: number) => this.request<{ ml: number; date: string }>('POST', '/water', { ml });
+
+  // Vision (DeepSeek)
+  analyzePhoto = (image: string) =>
+    this.request<{ name: string; caloriesPer100: number; proteinsPer100: number; fatsPer100: number; carbsPer100: number }>('POST', '/vision/analyze-photo', { image });
+
+  analyzeText = (text: string) =>
+    this.request<{ name: string; caloriesPer100: number; proteinsPer100: number; fatsPer100: number; carbsPer100: number }>('POST', '/vision/analyze-text', { text });
 }
 
 export const api = new ApiClient();
