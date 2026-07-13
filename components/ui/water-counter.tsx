@@ -57,7 +57,8 @@ export function WaterCounter() {
   const quickAmounts = [250, 500, 750];
 
   return (
-    <View style={[styles.card, { backgroundColor: hexToRgba('#4FC3F7', 0.18), borderColor: '#4FC3F7' }]}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: '#4FC3F7' }]}>
+      <View style={[styles.cardAccent, { backgroundColor: hexToRgba('#4FC3F7', 0.08) }]} />
       <View style={styles.header}>
         <MaterialIcons name="water-drop" size={22} color="#4FC3F7" />
         <Text style={[styles.title, { color: '#0288D1' }]}>Вода</Text>
@@ -147,7 +148,10 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 3,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: 'hidden',
+  },
+  cardAccent: {
+    position: 'absolute', top: 0, left: 0, right: 0, height: 4,
   },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14,

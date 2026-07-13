@@ -159,10 +159,10 @@ export default function AddFoodScreen() {
       try {
         const result = await ImagePicker.launchCameraAsync({
           mediaTypes: ['images'],
-          quality: 0.6,
+          quality: 0.4,
           base64: true,
-          maxWidth: 1024,
-          maxHeight: 1024,
+          maxWidth: 800,
+          maxHeight: 800,
         });
         if (!result.canceled && result.assets?.[0]?.base64) {
           imageBase64 = result.assets[0].base64;
@@ -180,10 +180,10 @@ export default function AddFoodScreen() {
         }
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          quality: 0.6,
+          quality: 0.4,
           base64: true,
-          maxWidth: 1024,
-          maxHeight: 1024,
+          maxWidth: 800,
+          maxHeight: 800,
         });
         if (!result.canceled && result.assets?.[0]?.base64) {
           imageBase64 = result.assets[0].base64;

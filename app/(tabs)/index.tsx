@@ -75,6 +75,11 @@ export default function HomeScreen() {
     initialize();
   }, [loadFoodEntries, loadProfile, rootNavigationState?.key, router]);
 
+  // Перезагружаем записи при смене даты
+  useEffect(() => {
+    loadFoodEntries(selectedDate);
+  }, [selectedDate, loadFoodEntries]);
+
   useEffect(() => {
     if (!toastMsg) return;
     Animated.sequence([

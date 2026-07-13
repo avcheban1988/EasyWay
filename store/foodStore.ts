@@ -25,7 +25,7 @@ interface FoodStore {
   removeFoodEntry: (id: string) => void;
   getEntriesForDate: (date: string) => FoodEntry[];
   getTotalsForDate: (date: string) => MacroTotals;
-  loadFoodEntries: () => Promise<void>;
+  loadFoodEntries: (date?: string) => Promise<void>;
   loadRecentProducts: () => Promise<void>;
 }
 
@@ -34,9 +34,10 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
   recentProducts: [],
   hydrated: false,
 
-  loadFoodEntries: async () => {
+  loadFoodEntries: async (date?: string) => {
     try {
-      const entries = await api.getFoodEntries(new Date().toISOString().slice(0, 10));
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      const entries = await api.getFoodEntries(targetDate);
       // Загружаем недавние продукты
       let recent: { name: string; grams: number }[] = [];
       try {
