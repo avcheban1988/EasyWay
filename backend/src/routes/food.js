@@ -63,6 +63,36 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// Получить записи за диапазон дат (для недельных итогов)
+router.get('/range', auth, async (req, res) => {
+  try {
+    const { start, end } = req.query;
+    if (!start || !end) {
+      return res.status(400).json({ error: 'Параметры start и end обязательны' });
+    }
+    const rows = await pool.query(
+      `SELECT id, user_id, meal_type, name, calories, proteins, fats, carbs, grams, DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
+       FROM food_entries WHERE user_id = ? AND date >= ? AND date <= ?
+       ORDER BY date, FIELD(meal_type,'Завтрак','Обед','Ужин','Перекус'), created_at`,
+      [req.userId, start, end]
+    );
+    res.json(rows.map(e => ({
+      id: String(e.id),
+      mealType: e.meal_type,
+      name: e.name,
+      calories: e.calories,
+      proteins: Number(e.proteins),
+      fats: Number(e.fats),
+      carbs: Number(e.carbs),
+      grams: e.grams,
+      date: e.date,
+    })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router;
 
 // Последние 10 уникальных продуктов пользователя

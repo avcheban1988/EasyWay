@@ -141,7 +141,7 @@ export default function AnthropometryScreen() {
             </PressableScale>
           </View>
           <View style={styles.imageLabel}>
-            <Text style={styles.imageLabelText}>Ем сам</Text>
+            <Text style={styles.imageLabelText}>CK</Text>
           </View>
         </View>
 

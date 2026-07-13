@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Ем сам",
-    "slug": "em-sam",
+    "name": "CK",
+    "slug": "ck-calorie-counter",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Logo.png",
@@ -46,7 +46,8 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://getthisjob.ru"
+      "apiUrl": "https://getthisjob.ru",
+      "appDisplayName": "CK - счетчик калорий"
     }
   }
 }

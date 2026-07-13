@@ -22,7 +22,7 @@ export function SummaryCard() {
   const colors = Colors[colorScheme ?? 'light'];
   const { account } = useAuthStore();
   const { userProfile, dailyMacros } = useUserStore();
-  const { foodEntries } = useFoodStore();
+  const { foodEntries, weekEntries, loadWeekEntries } = useFoodStore();
   const { entries: weightEntries, loadEntries } = useWeightStore();
 
   const [expanded, setExpanded] = useState(false);
@@ -35,7 +35,8 @@ export function SummaryCard() {
 
   useEffect(() => {
     loadEntries();
-  }, [loadEntries]);
+    loadWeekEntries();
+  }, [loadEntries, loadWeekEntries]);
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -68,21 +69,16 @@ export function SummaryCard() {
     return part.charAt(0).toUpperCase() + part.slice(1);
   }, [account, userProfile.name]);
 
-  // compute last 7 days sums for macros
+  // Сумма макросов за текущую неделю (Пн-Вс)
   const weekSums = useMemo(() => {
     const sums = { carbs: 0, proteins: 0, fats: 0 };
-    const today = new Date();
-    const dayAgo = (d: Date, n: number) => {
-      const dd = new Date(d);
-      dd.setDate(dd.getDate() - n);
-      return dd.toISOString().slice(0, 10);
-    };
-    const last7 = new Set<string>();
-    for (let i = 0; i < 7; i++) last7.add(dayAgo(today, i));
-
-    for (const e of foodEntries) {
-      if (last7.has(e.date)) {
-        sums.carbs += Number(e.carbs);
+    for (const e of weekEntries) {
+      sums.carbs += Number(e.carbs);
+      sums.proteins += Number(e.proteins);
+      sums.fats += Number(e.fats);
+    }
+    return sums;
+  }, [weekEntries]);
         sums.proteins += Number(e.proteins);
         sums.fats += Number(e.fats);
       }
@@ -124,9 +120,9 @@ export function SummaryCard() {
 
   const recordedDays = useMemo(() => {
     const set = new Set<string>();
-    for (const e of foodEntries) set.add(e.date);
+    for (const e of weekEntries) set.add(e.date);
     return set.size;
-  }, [foodEntries]);
+  }, [weekEntries]);
 
   const formatDateShort = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00');
@@ -142,7 +138,7 @@ export function SummaryCard() {
     <Animated.View style={[styles.card, Shadows.card, { backgroundColor: colors.card, borderColor: colors.border, height: animHeight }]}> 
       <View style={styles.topRow}>
         <View style={styles.titleWrap}>
-          <Text style={[styles.title, { color: colors.text }]}>Ем сам</Text>
+          <Text style={[styles.title, { color: colors.text }]}>CK - счетчик калорий</Text>
           <Text style={[styles.greeting, { color: colors.icon }]}>Привет, {name} 👋</Text>
         </View>
         <View style={styles.logoWrap}>

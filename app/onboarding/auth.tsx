@@ -60,7 +60,7 @@ export default function AuthScreen() {
   // Всегда используем режим телефона, независимо от аккаунта
 
   const ctaText = mode === 'signup' ? 'Зарегистрироваться' : 'Войти';
-  const titleText = 'Ем сам';
+  const titleText = 'CK';
 
   // Ротатор цитат для экрана входа
   const quotes = [

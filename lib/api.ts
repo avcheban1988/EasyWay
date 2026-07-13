@@ -108,6 +108,8 @@ class ApiClient {
   // Food entries
   getFoodEntries = (date: string) => this.request<any[]>('GET', `/food?date=${date}`);
 
+  getFoodEntriesRange = (start: string, end: string) => this.request<any[]>('GET', `/food/range?start=${start}&end=${end}`);
+
   addFoodEntry = (data: any) => this.request<any>('POST', '/food', data);
 
   deleteFoodEntry = (id: string) => this.request<any>('DELETE', `/food/${id}`);

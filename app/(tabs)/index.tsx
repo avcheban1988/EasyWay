@@ -77,6 +77,8 @@ export default function HomeScreen() {
 
   // Перезагружаем записи при смене даты
   useEffect(() => {
+    const token = useAuthStore.getState().token;
+    if (!token) return;
     loadFoodEntries(selectedDate);
   }, [selectedDate, loadFoodEntries]);
 
