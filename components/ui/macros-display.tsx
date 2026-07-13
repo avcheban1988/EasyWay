@@ -30,18 +30,18 @@ export function MacrosDisplay({ macros, todayTotals }: MacrosDisplayProps) {
   useEffect(() => {
     const duration = 800;
     Animated.parallel([
-      Animated.timing(calAnim, { toValue: Math.min(1, totals.calories / Math.max(1, macros.calories)), duration, useNativeDriver: false }),
-      Animated.timing(protAnim, { toValue: Math.min(1, totals.proteins / Math.max(1, macros.proteins)), duration, useNativeDriver: false }),
-      Animated.timing(fatAnim, { toValue: Math.min(1, totals.fats / Math.max(1, macros.fats)), duration, useNativeDriver: false }),
-      Animated.timing(carbAnim, { toValue: Math.min(1, totals.carbs / Math.max(1, macros.carbs)), duration, useNativeDriver: false }),
+      Animated.timing(calAnim, { toValue: Math.min(1, Number(totals.calories) / Math.max(1, Number(macros.calories))), duration, useNativeDriver: false }),
+      Animated.timing(protAnim, { toValue: Math.min(1, Number(totals.proteins) / Math.max(1, Number(macros.proteins))), duration, useNativeDriver: false }),
+      Animated.timing(fatAnim, { toValue: Math.min(1, Number(totals.fats) / Math.max(1, Number(macros.fats))), duration, useNativeDriver: false }),
+      Animated.timing(carbAnim, { toValue: Math.min(1, Number(totals.carbs) / Math.max(1, Number(macros.carbs))), duration, useNativeDriver: false }),
     ]).start();
   }, [totals, macros, calAnim, protAnim, fatAnim, carbAnim]);
 
   const bars = [
-    { key: 'calories', label: 'Калории', eaten: totals.calories, target: macros.calories, anim: calAnim, color: BAR_COLORS.calories, big: true, unit: 'ккал' },
-    { key: 'proteins', label: 'Белки', eaten: totals.proteins, target: macros.proteins, anim: protAnim, color: BAR_COLORS.proteins, big: false, unit: 'г' },
-    { key: 'fats', label: 'Жиры', eaten: totals.fats, target: macros.fats, anim: fatAnim, color: BAR_COLORS.fats, big: false, unit: 'г' },
-    { key: 'carbs', label: 'Углеводы', eaten: totals.carbs, target: macros.carbs, anim: carbAnim, color: BAR_COLORS.carbs, big: false, unit: 'г' },
+    { key: 'calories', label: 'Калории', eaten: Number(totals.calories), target: Number(macros.calories), anim: calAnim, color: BAR_COLORS.calories, big: true, unit: 'ккал' },
+    { key: 'proteins', label: 'Белки', eaten: Number(totals.proteins), target: Number(macros.proteins), anim: protAnim, color: BAR_COLORS.proteins, big: false, unit: 'г' },
+    { key: 'fats', label: 'Жиры', eaten: Number(totals.fats), target: Number(macros.fats), anim: fatAnim, color: BAR_COLORS.fats, big: false, unit: 'г' },
+    { key: 'carbs', label: 'Углеводы', eaten: Number(totals.carbs), target: Number(macros.carbs), anim: carbAnim, color: BAR_COLORS.carbs, big: false, unit: 'г' },
   ];
 
   return (

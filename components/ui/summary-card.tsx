@@ -82,9 +82,9 @@ export function SummaryCard() {
 
     for (const e of foodEntries) {
       if (last7.has(e.date)) {
-        sums.carbs += e.carbs;
-        sums.proteins += e.proteins;
-        sums.fats += e.fats;
+        sums.carbs += Number(e.carbs);
+        sums.proteins += Number(e.proteins);
+        sums.fats += Number(e.fats);
       }
     }
     return sums;

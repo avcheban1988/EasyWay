@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     const rows = await pool.query(
-      `SELECT * FROM weight_entries WHERE user_id = ? ORDER BY date DESC`,
+      `SELECT id, user_id, DATE_FORMAT(date, '%Y-%m-%d') as date, weight FROM weight_entries WHERE user_id = ? ORDER BY date DESC`,
       [req.userId]
     );
     res.json(rows.map(w => ({ id: String(w.id), date: w.date, weight: w.weight })));

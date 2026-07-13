@@ -12,7 +12,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -85,62 +85,11 @@ export default function HomeScreen() {
   const isToday = selectedDate === getToday();
 
   const handlePrevDay = () => {
-    // Анимированный свайп
-    Animated.timing(swipeAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      swipeAnim.setValue(0);
-      setSelectedDate(shiftDate(selectedDate, -1));
-    });
+    setSelectedDate(shiftDate(selectedDate, -1));
   };
   const handleNextDay = () => {
-    Animated.timing(swipeAnim, {
-      toValue: -1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      swipeAnim.setValue(0);
-      setSelectedDate(shiftDate(selectedDate, 1));
-    });
+    setSelectedDate(shiftDate(selectedDate, 1));
   };
-
-  // Анимированный свайп для переключения дат
-  const swipeAnim = useRef(new Animated.Value(0)).current;
-  const dateSwipeResponder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 5,
-    onPanResponderMove: (_, gs) => {
-      swipeAnim.setValue(gs.dx);
-    },
-    onPanResponderRelease: (_, gs) => {
-      if (gs.dx > 60) {
-        Animated.timing(swipeAnim, {
-          toValue: 300,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          swipeAnim.setValue(0);
-          setSelectedDate(shiftDate(selectedDate, -1));
-        });
-      } else if (gs.dx < -60) {
-        Animated.timing(swipeAnim, {
-          toValue: -300,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          swipeAnim.setValue(0);
-          setSelectedDate(shiftDate(selectedDate, 1));
-        });
-      } else {
-        Animated.spring(swipeAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      }
-    },
-  })).current;
 
   const handleDatePress = () => {
     if (Platform.OS === 'web') {
@@ -177,7 +126,6 @@ export default function HomeScreen() {
 
         {dailyMacros && (
           <SurfaceCard style={{ backgroundColor: '#EBF7EE', borderColor: '#53B175' }}>
-            <Animated.View style={{ transform: [{ translateX: swipeAnim }] }} {...dateSwipeResponder.panHandlers}>
             <View style={styles.dateHeader}>
               <TouchableOpacity onPress={handlePrevDay} style={styles.arrowBtn} activeOpacity={0.7}>
                 <MaterialIcons name="chevron-left" size={28} color="#3D8C54" />
@@ -226,7 +174,6 @@ export default function HomeScreen() {
             )}
 
             <MacrosDisplay macros={dailyMacros} todayTotals={dayTotals} />
-            </Animated.View>
           </SurfaceCard>
         )}
 

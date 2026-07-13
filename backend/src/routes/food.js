@@ -9,7 +9,9 @@ router.get('/', auth, async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().slice(0, 10);
     const rows = await pool.query(
-      `SELECT * FROM food_entries WHERE user_id = ? AND date = ? ORDER BY FIELD(meal_type,'Завтрак','Обед','Ужин','Перекус'), created_at`,
+      `SELECT id, user_id, meal_type, name, calories, proteins, fats, carbs, grams, DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
+       FROM food_entries WHERE user_id = ? AND date = ?
+       ORDER BY FIELD(meal_type,'Завтрак','Обед','Ужин','Перекус'), created_at`,
       [req.userId, date]
     );
     res.json(rows.map(e => ({
@@ -17,9 +19,9 @@ router.get('/', auth, async (req, res) => {
       mealType: e.meal_type,
       name: e.name,
       calories: e.calories,
-      proteins: e.proteins,
-      fats: e.fats,
-      carbs: e.carbs,
+      proteins: Number(e.proteins),
+      fats: Number(e.fats),
+      carbs: Number(e.carbs),
       grams: e.grams,
       date: e.date,
     })));
@@ -40,8 +42,9 @@ router.post('/', auth, async (req, res) => {
        calories, proteins || 0, fats || 0, carbs || 0, grams || null, productId || null]
     );
     res.status(201).json({
-      id: String(result.insertId), mealType, name, calories,
-      proteins: proteins || 0, fats: fats || 0, carbs: carbs || 0, grams: grams || null,
+      id: String(result.insertId), mealType, name, calories: Number(calories),
+      proteins: Number(proteins) || 0, fats: Number(fats) || 0, carbs: Number(carbs) || 0, grams: grams || null,
+      date: date || new Date().toISOString().slice(0, 10),
     });
   } catch (err) {
     console.error(err);

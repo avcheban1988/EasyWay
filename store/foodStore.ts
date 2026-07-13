@@ -68,17 +68,19 @@ export const useFoodStore = create<FoodStore>((set, get) => ({
   resetFoodEntries: () => set({ foodEntries: [], hydrated: false }),
 
   getEntriesForDate: (date) => {
-    return get().foodEntries.filter((entry) => entry.date === date);
+    const dateStr = date.slice(0, 10);
+    return get().foodEntries.filter((entry) => (entry.date || '').slice(0, 10) === dateStr);
   },
 
   getTotalsForDate: (date) => {
-    const items = get().foodEntries.filter((entry) => entry.date === date);
+    const dateStr = date.slice(0, 10);
+    const items = get().foodEntries.filter((entry) => (entry.date || '').slice(0, 10) === dateStr);
     return items.reduce(
       (totals, item) => ({
         calories: totals.calories + item.calories,
-        proteins: totals.proteins + item.proteins,
-        fats: totals.fats + item.fats,
-        carbs: totals.carbs + item.carbs,
+        proteins: totals.proteins + Number(item.proteins),
+        fats: totals.fats + Number(item.fats),
+        carbs: totals.carbs + Number(item.carbs),
       }),
       { calories: 0, proteins: 0, fats: 0, carbs: 0 }
     );
