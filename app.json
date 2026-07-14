@@ -9,21 +9,23 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.avcheban1988.ckcaloriecounter",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#53B175",
-        "foregroundImage": "./assets/images/Logo.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/Logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.avcheban1988.ckcaloriecounter"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",
@@ -47,7 +49,11 @@
     },
     "extra": {
       "apiUrl": "https://getthisjob.ru",
-      "appDisplayName": "CK - счетчик калорий"
+      "appDisplayName": "CK - счетчик калорий",
+      "router": {},
+      "eas": {
+        "projectId": "00ace23d-da74-4d08-9eed-bf15e02236e2"
+      }
     }
   }
 }
