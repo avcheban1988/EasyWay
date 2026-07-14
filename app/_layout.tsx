@@ -38,7 +38,7 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 50 : 0 }}>
+    <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : 0 }}>
       <View style={{ flex: 1 }}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>

@@ -15,7 +15,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         lazy: true,
-        sceneStyle: { backgroundColor: colors.background },
+        sceneStyle: { backgroundColor: colors.background, paddingTop: 0, marginTop: 0 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Главная' }} />
