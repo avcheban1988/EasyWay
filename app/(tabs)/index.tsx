@@ -15,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -52,6 +53,8 @@ export default function HomeScreen() {
   const { loadFoodEntries, removeFoodEntry, addFoodEntry, getEntriesForDate, getTotalsForDate } = useFoodStore();
   const { checkAuth } = useAuthStore();
   const { load: loadWater } = useWaterStore();
+
+  const insets = useSafeAreaInsets();
 
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -132,7 +135,15 @@ export default function HomeScreen() {
 
   return (
     <MainTabBackground>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 160 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView style={styles.container}
+        contentContainerStyle=
+        {
+          {
+            paddingBottom: 160,
+            paddingTop: insets.top
+          }
+        }
+        keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <SummaryCard />
 
         {dailyMacros && (
@@ -246,7 +257,7 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <View style={styles.mealActions}>
-                            <TouchableOpacity onPress={() => { setEditModalPortions('1'); setEditModalGrams((meal.grams ?? 100).toString()); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
+                        <TouchableOpacity onPress={() => { setEditModalPortions('1'); setEditModalGrams((meal.grams ?? 100).toString()); setEditModalMeal(meal); }} style={styles.mealAction} activeOpacity={0.7}>
                           <MaterialIcons name="edit" size={16} color={colors.icon} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => removeFoodEntry(meal.id)} style={styles.mealAction} activeOpacity={0.7}>
@@ -468,19 +479,19 @@ const styles = StyleSheet.create({
   mealTypeLabel: { fontFamily: fontFamily('semiBold'), fontSize: 11 },
   mealNotes: { ...Typography.caption, marginTop: 2 },
   emptyText: { fontSize: 14, marginTop: 8 },
-  fab: { 
-    position: 'absolute', 
-    bottom: 100, 
-    right: 20, 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    elevation: 6, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 3 }, 
-    shadowOpacity: 0.25, 
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     zIndex: 100,
   },

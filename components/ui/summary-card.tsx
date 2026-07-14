@@ -180,19 +180,19 @@ export function SummaryCard() {
               <View style={styles.compactRow}>
                 <View style={styles.compactItem}>
                   <View style={styles.compactBarTrack}>
-                    <View style={[styles.compactBarFill, { backgroundColor: '#FF9800', width: `${carbsProgress * 100}%` }]} />
+                    <View style={[styles.compactBarFill, { backgroundColor: '#53B175', width: `${proteinsProgress * 100}%` }]} />
                   </View>
                 </View>
 
                 <View style={styles.compactItem}>
                   <View style={styles.compactBarTrack}>
-                    <View style={[styles.compactBarFill, { backgroundColor: '#66BB6A', width: `${proteinsProgress * 100}%` }]} />
+                    <View style={[styles.compactBarFill, { backgroundColor: '#F7A593', width: `${fatsProgress * 100}%` }]} />
                   </View>
                 </View>
 
                 <View style={styles.compactItem}>
                   <View style={styles.compactBarTrack}>
-                    <View style={[styles.compactBarFill, { backgroundColor: '#E53935', width: `${fatsProgress * 100}%` }]} />
+                    <View style={[styles.compactBarFill, { backgroundColor: '#F8A44C', width: `${carbsProgress * 100}%` }]} />
                   </View>
                 </View>
               </View>
@@ -200,17 +200,9 @@ export function SummaryCard() {
           ) : (
             <>
               <View style={styles.barRow}>
-                <Text style={[styles.barLabel, { color: colors.text }]}>Углеводы</Text>
-                <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { backgroundColor: '#FF9800', width: `${carbsProgress * 100}%` }]} />
-                </View>
-                <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.carbs)} / {Math.round(weeklyTargets.carbs)}</Text>
-              </View>
-
-              <View style={styles.barRow}>
                 <Text style={[styles.barLabel, { color: colors.text }]}>Белки</Text>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { backgroundColor: '#66BB6A', width: `${proteinsProgress * 100}%` }]} />
+                  <View style={[styles.barFill, { backgroundColor: '#53B175', width: `${proteinsProgress * 100}%` }]} />
                 </View>
                 <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.proteins)} / {Math.round(weeklyTargets.proteins)}</Text>
               </View>
@@ -218,9 +210,17 @@ export function SummaryCard() {
               <View style={styles.barRow}>
                 <Text style={[styles.barLabel, { color: colors.text }]}>Жиры</Text>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { backgroundColor: '#E53935', width: `${fatsProgress * 100}%` }]} />
+                  <View style={[styles.barFill, { backgroundColor: '#F7A593', width: `${fatsProgress * 100}%` }]} />
                 </View>
                 <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.fats)} / {Math.round(weeklyTargets.fats)}</Text>
+              </View>
+
+              <View style={styles.barRow}>
+                <Text style={[styles.barLabel, { color: colors.text }]}>Углеводы</Text>
+                <View style={styles.barTrack}>
+                  <View style={[styles.barFill, { backgroundColor: '#F8A44C', width: `${carbsProgress * 100}%` }]} />
+                </View>
+                <Text style={[styles.barValue, { color: colors.icon }]}>{Math.round(weekSums.carbs)} / {Math.round(weeklyTargets.carbs)}</Text>
               </View>
 
               <View style={styles.bottomRow}>
