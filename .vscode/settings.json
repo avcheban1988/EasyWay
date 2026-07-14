@@ -29,6 +29,7 @@
     "/^cd '/home/aleks/Документы/webDev/Счетчик Ккалорий/EasyWay/MyNewApp/backend' && node -c src/index\\.js && node -c src/db/pool\\.js && node -c src/db/init\\.js && echo \"✅ OK\"$/": {
       "approve": true,
       "matchCommandLine": true
-    }
+    },
+    "eas": true
   }
 }
