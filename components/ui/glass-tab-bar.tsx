@@ -3,12 +3,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useRef } from 'react';
 import {
-    Animated,
-    Pressable,
-    StyleSheet,
-    Text,
-    useWindowDimensions,
-    View,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 
 type TabRoute = {
@@ -119,12 +119,12 @@ export function GlassTabBar({
 const styles = StyleSheet.create({
   outerWrap: {
     paddingHorizontal: 12,
-    paddingBottom: 16,
-    marginTop: -20,
+    paddingBottom: 35,
+    marginTop: -185,
   },
   container: {
     borderRadius: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: 'rgba(200,200,220,0.5)',
     // Тень для стеклянного эффекта

@@ -8,13 +8,13 @@ import { useWeightStore } from '@/store/weightStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Easing,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Easing,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export function SummaryCard() {
@@ -79,12 +79,6 @@ export function SummaryCard() {
     }
     return sums;
   }, [weekEntries]);
-        sums.proteins += Number(e.proteins);
-        sums.fats += Number(e.fats);
-      }
-    }
-    return sums;
-  }, [foodEntries]);
 
   const weeklyTargets = useMemo(() => {
     if (!dailyMacros) return { carbs: 1, proteins: 1, fats: 1 };

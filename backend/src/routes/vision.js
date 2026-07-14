@@ -212,6 +212,12 @@ router.post('/analyze-photo', auth, async (req, res) => {
     }
 
     console.log('[Vision] Sending to GigaChat Vision...');
+    console.log('[Vision] Image base64 length:', image.length, 'bytes');
+
+    // Если изображение слишком большое — ошибка сразу
+    if (image.length > 500000) {
+      return res.status(400).json({ error: 'Изображение слишком большое, сделайте фото с меньшим разрешением' });
+    }
 
     const messages = [
       {

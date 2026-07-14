@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-    ImageBackground,
-    ImageSourcePropType,
-    StyleSheet,
-    View,
-    type StyleProp,
-    type ViewStyle,
+  ImageBackground,
+  ImageSourcePropType,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 
 type ScreenBackgroundProps = {
@@ -53,3 +53,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+

@@ -132,7 +132,7 @@ export default function HomeScreen() {
 
   return (
     <MainTabBackground>
-      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 160 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <SummaryCard />
 
         {dailyMacros && (

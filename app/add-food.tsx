@@ -9,13 +9,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated, Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Animated, Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const MEAL_TYPES: MealType[] = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];
@@ -159,10 +159,10 @@ export default function AddFoodScreen() {
       try {
         const result = await ImagePicker.launchCameraAsync({
           mediaTypes: ['images'],
-          quality: 0.4,
+          quality: 0.2,
           base64: true,
-          maxWidth: 800,
-          maxHeight: 800,
+          maxWidth: 400,
+          maxHeight: 400,
         });
         if (!result.canceled && result.assets?.[0]?.base64) {
           imageBase64 = result.assets[0].base64;
@@ -180,10 +180,10 @@ export default function AddFoodScreen() {
         }
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          quality: 0.4,
+          quality: 0.2,
           base64: true,
-          maxWidth: 800,
-          maxHeight: 800,
+          maxWidth: 400,
+          maxHeight: 400,
         });
         if (!result.canceled && result.assets?.[0]?.base64) {
           imageBase64 = result.assets[0].base64;
@@ -529,6 +529,10 @@ export default function AddFoodScreen() {
 {/* Форма ручного добавления (рендерится внутри блока «ничего не найдено») */}
 
       {/* Недавно добавленные */}
+      <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => router.back()} activeOpacity={0.85}>
+        <Text style={[styles.cancelText, { color: colors.icon }]}>Готово</Text>
+      </TouchableOpacity>
+
       {!selectedProduct && recentProducts.length > 0 && (
         <View style={[styles.recentSection, { borderColor: colors.border }]}>
           <Text style={[styles.recentTitle, { color: colors.text }]}>Недавно добавленные</Text>
@@ -601,10 +605,6 @@ export default function AddFoodScreen() {
           })}
         </View>
       )}
-
-      <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => router.back()} activeOpacity={0.85}>
-        <Text style={[styles.cancelText, { color: colors.icon }]}>Готово</Text>
-      </TouchableOpacity>
 
       {/* Модалка сканера штрихкода */}
       {barcodeModal && (
